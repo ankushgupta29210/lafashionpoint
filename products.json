@@ -1,0 +1,49 @@
+{
+  "lastUpdated": "2025-06-19",
+  "products": [
+    {
+      "id": "p1",
+      "name": "Classic T-Shirts",
+      "category": "T-Shirt",
+      "description": "Premium cotton tees in every color and style. Soft, breathable, and perfect for everyday wear.",
+      "price": 499,
+      "originalPrice": 699,
+      "badge": "New",
+      "image": "",
+      "available": true
+    },
+    {
+      "id": "p2",
+      "name": "Premium Shirts",
+      "category": "Shirt",
+      "description": "Formal & casual shirts crafted for the modern man. Crisp, comfortable, and always stylish.",
+      "price": 799,
+      "originalPrice": 1099,
+      "badge": "",
+      "image": "",
+      "available": true
+    },
+    {
+      "id": "p3",
+      "name": "Stylish Hoodies",
+      "category": "Hoodie",
+      "description": "Cosy & stylish hoodies perfect for every season. Thick fleece lining keeps you warm in style.",
+      "price": 999,
+      "originalPrice": 1399,
+      "badge": "Hot",
+      "image": "",
+      "available": true
+    },
+    {
+      "id": "p4",
+      "name": "Trendy Jeans",
+      "category": "Jeans",
+      "description": "Classic & trendy denim cuts for the perfect fit. Durable, flexible, and endlessly wearable.",
+      "price": 899,
+      "originalPrice": 1299,
+      "badge": "",
+      "image": "",
+      "available": true
+    }
+  ]
+}
