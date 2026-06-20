@@ -38,7 +38,10 @@ onAuthStateChanged(auth, user => {
         startListeners();
         // Wire up size chips once DOM is visible
         document.querySelectorAll('.size-chip').forEach(chip => {
-            chip.addEventListener('click', () => chip.classList.toggle('active'));
+            chip.addEventListener('click', () => {
+                chip.classList.toggle('active');
+                scheduleInvRefresh();
+            });
         });
     } else {
         document.getElementById('loginScreen').style.display = 'flex';
@@ -92,11 +95,11 @@ window.togglePass = () => {
 /* ============================================================
    NAVIGATION
    ============================================================ */
-const SECTIONS = ['dashboard','products','form','inquiries','pos','orders','orderForm','coupons','couponForm','settings'];
+const SECTIONS = ['dashboard','products','form','inquiries','inventory','pos','orders','orderForm','coupons','couponForm','settings'];
 const TITLES   = {
     dashboard:'Dashboard', products:'Products', form:'',
-    inquiries:'Inquiries', pos:'Point of Sale', orders:'Orders', orderForm:'',
-    coupons:'Coupons', couponForm:'', settings:'Settings'
+    inquiries:'Inquiries', inventory:'Inventory', pos:'Point of Sale',
+    orders:'Orders', orderForm:'', coupons:'Coupons', couponForm:'', settings:'Settings'
 };
 
 window.showSection = name => {
@@ -136,6 +139,10 @@ function updateDashboard() {
     set('dTotalInquiries',  totalInquiries);
     set('dUnreadInquiries', unreadInquiries);
     set('dTotalOrders',     allOrders.length);
+
+    const outCount = buildVariantList().filter(v => v.stock === 0).length;
+    const badge    = document.getElementById('outOfStockCount');
+    if (badge) { badge.textContent = outCount; badge.style.display = outCount ? 'inline-block' : 'none'; }
 }
 
 /* ============================================================
@@ -147,6 +154,7 @@ function listenProducts() {
         allProducts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         renderProductTable(allProducts);
         renderPosProducts();
+        renderInventory();
         updateDashboard();
     });
 }
@@ -240,6 +248,7 @@ window.editProduct = async id => {
     document.getElementById('pFabric').value         = p.fabric        || '';
     document.getElementById('pColors').value         = (p.colors || []).join(', ');
     document.getElementById('pOrder').value          = p.order         ?? 99;
+    setTimeout(buildInventoryInputs, 50);
     document.getElementById('pAvailable').checked   = p.available      !== false;
 
     /* Sizes */
@@ -267,6 +276,7 @@ function resetForm() {
     document.getElementById('uploadProgress').style.display    = 'none';
     document.getElementById('pFabric').value                   = '';
     document.getElementById('pColors').value                   = '';
+    document.getElementById('inventoryGrid').innerHTML         = '';
     document.querySelectorAll('.size-chip').forEach(c => c.classList.remove('active'));
     pendingImageFile = null;
     pendingImageUrl  = '';
@@ -323,11 +333,18 @@ window.saveProduct = async e => {
         if (pendingImageFile) {
             imageUrl = await uploadImage(pendingImageFile, id || Date.now().toString());
         }
+        /* Collect inventory */
+        const inventoryMap = {};
+        document.querySelectorAll('#inventoryGrid .inv-input').forEach(inp => {
+            if (inp.value !== '') inventoryMap[inp.dataset.key] = Number(inp.value);
+        });
+
         const data = {
             name, category, badge, price, description: desc,
             fabric:        fabric || null,
             colors:        colors && colors.length ? colors : null,
             sizes:         sizes.length ? sizes : null,
+            inventory:     Object.keys(inventoryMap).length ? inventoryMap : null,
             order, available: avail,
             imageUrl:      imageUrl || '',
             originalPrice: orig && orig > price ? orig : null,
@@ -801,6 +818,221 @@ function toast(msg, type = '') {
 }
 
 /* ============================================================
+   INVENTORY MANAGEMENT
+   ============================================================ */
+
+/* Helper: inventory key for a size + colour combination */
+function invKey(size, color) {
+    return color ? `${size}_${color}` : size;
+}
+
+/* Flatten all product variants into a list for overview / dashboard */
+function buildVariantList() {
+    const rows = [];
+    allProducts.forEach(p => {
+        const inv    = p.inventory || {};
+        const sizes  = p.sizes  || [];
+        const colors = p.colors || [];
+
+        if (sizes.length && colors.length) {
+            sizes.forEach(s => colors.forEach(c => {
+                const k = invKey(s, c);
+                if (k in inv) rows.push({ p, size: s, color: c, key: k, stock: inv[k] });
+            }));
+        } else if (sizes.length) {
+            sizes.forEach(s => {
+                if (s in inv) rows.push({ p, size: s, color: '', key: s, stock: inv[s] });
+            });
+        } else {
+            Object.entries(inv).forEach(([k, stock]) => {
+                const [s, ...rest] = k.split('_');
+                rows.push({ p, size: s, color: rest.join('_'), key: k, stock });
+            });
+        }
+        return rows;
+    });
+    return rows;
+}
+
+/* Stock availability helpers used by POS and modal */
+function sizeHasStock(p, size) {
+    const inv = p.inventory;
+    if (!inv) return true;
+    if (p.colors && p.colors.length) {
+        return p.colors.some(c => { const s = inv[invKey(size, c)]; return s === undefined || s > 0; });
+    }
+    const s = inv[size];
+    return s === undefined || s > 0;
+}
+
+function colorHasStock(p, size, color) {
+    const inv = p.inventory;
+    if (!inv) return true;
+    const s = inv[invKey(size, color)];
+    return s === undefined || s > 0;
+}
+
+window.getStock = function(p, size, color) {
+    if (!p.inventory) return null;
+    const k = invKey(size, color);
+    return p.inventory[k] ?? null;
+};
+
+/* Build inventory input grid in product form */
+let invRefreshTimer = null;
+window.scheduleInvRefresh = () => {
+    clearTimeout(invRefreshTimer);
+    invRefreshTimer = setTimeout(buildInventoryInputs, 600);
+};
+
+window.buildInventoryInputs = function() {
+    const grid   = document.getElementById('inventoryGrid');
+    if (!grid) return;
+
+    const sizes  = Array.from(document.querySelectorAll('.size-chip.active')).map(c => c.dataset.size);
+    const colRaw = document.getElementById('pColors').value;
+    const colors = colRaw ? colRaw.split(',').map(c => c.trim()).filter(Boolean) : [];
+
+    /* Current inventory from the product being edited */
+    const pid    = document.getElementById('editId').value;
+    const curInv = (pid ? allProducts.find(x => x.id === pid)?.inventory : null) || {};
+
+    if (!sizes.length) {
+        grid.innerHTML = '<p style="color:#9ca3af;font-size:.8rem;">Select sizes above, then click Refresh Grid.</p>';
+        return;
+    }
+
+    if (colors.length) {
+        /* Grid: rows = sizes, columns = colors */
+        let html = `<div class="inv-grid-table">
+            <div class="inv-grid-header">
+                <span class="inv-size-label"></span>
+                ${colors.map(c => `<span class="inv-col-head">${c}</span>`).join('')}
+            </div>`;
+        sizes.forEach(s => {
+            html += `<div class="inv-grid-row">
+                <span class="inv-size-label">${s}</span>
+                ${colors.map(c => {
+                    const k = invKey(s, c);
+                    const v = curInv[k] ?? '';
+                    return `<input type="number" class="inv-input" data-key="${k}"
+                        value="${v}" min="0" step="1" placeholder="—"
+                        title="${s} / ${c}">`;
+                }).join('')}
+            </div>`;
+        });
+        html += '</div>';
+        grid.innerHTML = html;
+    } else {
+        /* Simple list: size → stock */
+        let html = '<div class="inv-simple-list">';
+        sizes.forEach(s => {
+            const v = curInv[s] ?? '';
+            html += `<div class="inv-simple-row">
+                <span class="inv-size-label">${s}</span>
+                <input type="number" class="inv-input" data-key="${s}"
+                    value="${v}" min="0" step="1" placeholder="—">
+            </div>`;
+        });
+        html += '</div>';
+        grid.innerHTML = html;
+    }
+};
+
+/* Inventory Overview Page */
+function renderInventory() {
+    const container = document.getElementById('inventoryTable');
+    const cards     = document.getElementById('invStatCards');
+    if (!container) return;
+
+    const all  = buildVariantList();
+    const out  = all.filter(v => v.stock === 0).length;
+    const low  = all.filter(v => v.stock > 0 && v.stock <= 5).length;
+    const ok   = all.filter(v => v.stock > 5).length;
+
+    if (cards) {
+        cards.innerHTML = `
+        <div class="inv-stat ok"><i class="fas fa-check-circle"></i><span>${ok}</span><small>In Stock</small></div>
+        <div class="inv-stat low"><i class="fas fa-exclamation-triangle"></i><span>${low}</span><small>Low Stock</small></div>
+        <div class="inv-stat out"><i class="fas fa-times-circle"></i><span>${out}</span><small>Out of Stock</small></div>
+        <div class="inv-stat total"><i class="fas fa-layer-group"></i><span>${all.length}</span><small>Total Variants</small></div>`;
+    }
+
+    if (!all.length) {
+        container.innerHTML = `
+        <div class="empty-state">
+            <i class="fas fa-warehouse"></i>
+            <p>No inventory tracked yet.</p>
+            <p style="font-size:.82rem;color:#9ca3af;">Edit a product → select sizes → set stock numbers.</p>
+        </div>`;
+        return;
+    }
+
+    window._allVariants = all;
+    renderInventoryTable(all);
+}
+
+function renderInventoryTable(rows) {
+    const container = document.getElementById('inventoryTable');
+    if (!container) return;
+    if (!rows.length) {
+        container.innerHTML = `<div class="empty-state"><i class="fas fa-search"></i><p>No variants match.</p></div>`;
+        return;
+    }
+    const tableRows = rows.map(v => {
+        const statusClass = v.stock === 0 ? 'inv-out' : v.stock <= 5 ? 'inv-low' : 'inv-ok';
+        const statusText  = v.stock === 0 ? 'Out of Stock' : v.stock <= 5 ? `Low (${v.stock})` : `In Stock (${v.stock})`;
+        return `
+        <tr>
+            <td>
+                ${v.p.imageUrl ? `<img src="${v.p.imageUrl}" class="prod-thumb" alt="">` : `<div class="prod-thumb-placeholder"><i class="fas fa-${iconFor(v.p.category)}"></i></div>`}
+            </td>
+            <td><div class="prod-name">${v.p.name}</div><div class="prod-cat">${v.p.category}</div></td>
+            <td><span class="inv-chip">${v.size}</span></td>
+            <td>${v.color ? `<span class="inv-chip colour">${v.color}</span>` : '<span style="color:#9ca3af">—</span>'}</td>
+            <td>
+                <input type="number" class="inv-stock-input" value="${v.stock}" min="0" step="1"
+                    onchange="updateVariantStock('${v.p.id}','${v.key}',this.value)"
+                    title="Click to edit stock">
+            </td>
+            <td><span class="inv-status ${statusClass}">${statusText}</span></td>
+            <td><button class="btn-edit" onclick="editProduct('${v.p.id}')"><i class="fas fa-pen"></i></button></td>
+        </tr>`;
+    }).join('');
+
+    container.innerHTML = `
+    <table class="products-table">
+        <thead>
+            <tr><th>Photo</th><th>Product</th><th>Size</th><th>Colour</th><th>Stock</th><th>Status</th><th></th></tr>
+        </thead>
+        <tbody>${tableRows}</tbody>
+    </table>`;
+}
+
+window.filterInventory = () => {
+    const status = document.getElementById('filterInvStatus')?.value || '';
+    const search = (document.getElementById('invSearch')?.value || '').toLowerCase();
+    let rows = window._allVariants || [];
+    if (search) rows = rows.filter(v => v.p.name.toLowerCase().includes(search));
+    if (status === 'out') rows = rows.filter(v => v.stock === 0);
+    if (status === 'low') rows = rows.filter(v => v.stock > 0 && v.stock <= 5);
+    if (status === 'ok')  rows = rows.filter(v => v.stock > 5);
+    renderInventoryTable(rows);
+};
+
+/* Inline stock update from inventory table */
+window.updateVariantStock = async (productId, key, value) => {
+    const stock = Number(value);
+    try {
+        await updateDoc(doc(db, 'products', productId), { [`inventory.${key}`]: stock });
+        toast('Stock updated', 'success');
+    } catch (err) {
+        console.error(err);
+        toast('Error updating stock', 'error');
+    }
+};
+
+/* ============================================================
    POS — POINT OF SALE
    ============================================================ */
 const POS_DEFAULT_SIZES = {
@@ -882,15 +1114,16 @@ window.openPosItem = id => {
 
     const sizes = (p.sizes&&p.sizes.length) ? p.sizes : (POS_DEFAULT_SIZES[p.category]||['S','M','L','XL','XXL']);
     document.getElementById('posItemSizeBtns').innerHTML =
-        sizes.map(s => `<button class="pos-chip" onclick="selectPosSize('${s}',this)">${s}</button>`).join('');
+        sizes.map(s => {
+            const inStock = sizeHasStock(p, s);
+            const stockVal = p.inventory ? (p.colors?.length ? null : p.inventory[s]) : null;
+            const label = stockVal !== null && stockVal !== undefined
+                ? (stockVal === 0 ? `${s} <small>Out</small>` : `${s} <small>(${stockVal})</small>`)
+                : s;
+            return `<button class="pos-chip ${inStock ? '' : 'oos'}" ${inStock ? `onclick="selectPosSize('${s}',this)"` : 'disabled'}>${label}</button>`;
+        }).join('');
 
-    if (p.colors && p.colors.length) {
-        document.getElementById('posItemColorBtns').innerHTML =
-            p.colors.map(c => `<button class="pos-chip" onclick="selectPosColor('${c}',this)">${c}</button>`).join('');
-    } else {
-        document.getElementById('posItemColorBtns').innerHTML =
-            `<span style="color:#999;font-size:.8rem;">All colours available — note in cart</span>`;
-    }
+    renderPosColorChips(p, '');
 
     document.getElementById('posItemModal').style.display = 'flex';
 };
@@ -900,10 +1133,28 @@ window.closePosItemModal = () => {
     posCurProduct = null;
 };
 
+function renderPosColorChips(p, selectedSize) {
+    if (p.colors && p.colors.length) {
+        document.getElementById('posItemColorBtns').innerHTML =
+            p.colors.map(c => {
+                const inStock = selectedSize ? colorHasStock(p, selectedSize, c) : true;
+                const stockVal = selectedSize && p.inventory ? p.inventory[invKey(selectedSize, c)] : null;
+                const label = stockVal !== null && stockVal !== undefined
+                    ? (stockVal === 0 ? `${c} <small>Out</small>` : `${c} <small>(${stockVal})</small>`)
+                    : c;
+                return `<button class="pos-chip ${inStock ? '' : 'oos'}" ${inStock ? `onclick="selectPosColor('${c}',this)"` : 'disabled'}>${label}</button>`;
+            }).join('');
+    } else {
+        document.getElementById('posItemColorBtns').innerHTML =
+            `<span style="color:#999;font-size:.8rem;">All colours available — note in cart</span>`;
+    }
+}
+
 window.selectPosSize = (s, el) => {
     document.querySelectorAll('#posItemSizeBtns .pos-chip').forEach(b => b.classList.remove('active'));
     el.classList.add('active');
     posSelSize = s;
+    if (posCurProduct) renderPosColorChips(posCurProduct, s);
 };
 
 window.selectPosColor = (c, el) => {
@@ -1066,6 +1317,7 @@ window.completeSale = async () => {
 
     try {
         await addDoc(collection(db, 'orders'), { ...sale, createdAt: serverTimestamp() });
+        await decrementInventory(posCart);
         posLastSale = { ...sale, createdAt: new Date() };
         showPosReceipt();
         toast('Sale completed!', 'success');
@@ -1082,6 +1334,24 @@ window.completeSale = async () => {
         btn.disabled  = false;
     }
 };
+
+/* — Inventory decrement — */
+async function decrementInventory(cart) {
+    /* Group updates by product ID */
+    const byProduct = {};
+    cart.forEach(item => {
+        const p  = allProducts.find(x => x.id === item.id);
+        if (!p || !p.inventory) return;
+        const k  = invKey(item.size || '', item.color || '');
+        const cur = p.inventory[k];
+        if (cur === undefined) return;
+        if (!byProduct[item.id]) byProduct[item.id] = {};
+        byProduct[item.id][`inventory.${k}`] = Math.max(0, cur - item.qty);
+    });
+    await Promise.all(
+        Object.entries(byProduct).map(([id, upd]) => updateDoc(doc(db, 'products', id), upd))
+    );
+}
 
 /* — Receipt — */
 function showPosReceipt() {

@@ -59,6 +59,10 @@
                 <i class="fas fa-envelope"></i> Inquiries
                 <span class="badge-count" id="inquiryCount" style="display:none;">0</span>
             </a>
+            <a href="#" class="nav-item" data-section="inventory" onclick="showSection('inventory')">
+                <i class="fas fa-warehouse"></i> Inventory
+                <span class="badge-count" id="outOfStockCount" style="display:none;">0</span>
+            </a>
             <a href="#" class="nav-item" data-section="pos" onclick="showSection('pos')">
                 <i class="fas fa-cash-register"></i> POS
             </a>
@@ -218,8 +222,19 @@
 
                         <div class="field">
                             <label>Available Colours</label>
-                            <input type="text" id="pColors" placeholder="e.g. Red, Blue, Black, White, Grey">
+                            <input type="text" id="pColors" placeholder="e.g. Red, Blue, Black, White, Grey" oninput="scheduleInvRefresh()">
                             <small class="field-hint">Comma-separated · Exact names shown as colour dots on site</small>
+                        </div>
+
+                        <div class="field">
+                            <div class="inv-field-header">
+                                <label style="margin:0;">Stock / Inventory</label>
+                                <button type="button" class="btn-sm-outline" onclick="buildInventoryInputs()">
+                                    <i class="fas fa-sync-alt"></i> Refresh Grid
+                                </button>
+                            </div>
+                            <div id="inventoryGrid" class="inv-input-grid"></div>
+                            <small class="field-hint">0 = out of stock · blank = no tracking for that variant</small>
                         </div>
 
                         <div class="field">
@@ -293,6 +308,25 @@
                     <button class="quick-btn" onclick="openCouponForm()"><i class="fas fa-tag"></i> Add Coupon</button>
                     <a href="index.html" target="_blank" class="quick-btn"><i class="fas fa-eye"></i> View Site</a>
                 </div>
+            </div>
+        </section>
+
+        <!-- ── INVENTORY SECTION ── -->
+        <section id="sectionInventory" class="content-section">
+            <div class="section-toolbar">
+                <div class="toolbar-left">
+                    <input type="text" id="invSearch" class="search-box" placeholder="Search product…" oninput="filterInventory()">
+                    <select id="filterInvStatus" class="filter-sel" onchange="filterInventory()">
+                        <option value="">All Variants</option>
+                        <option value="out">Out of Stock</option>
+                        <option value="low">Low Stock (≤5)</option>
+                        <option value="ok">In Stock</option>
+                    </select>
+                </div>
+            </div>
+            <div class="inv-stat-cards" id="invStatCards"></div>
+            <div id="inventoryTable">
+                <div class="list-loading"><i class="fas fa-spinner fa-spin"></i> Loading inventory…</div>
             </div>
         </section>
 

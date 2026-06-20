@@ -210,23 +210,10 @@ window.openProductModal = function(id) {
 
     /* Sizes */
     const sizes = (p.sizes && p.sizes.length) ? p.sizes : (DEFAULT_SIZES[p.category] || ['S','M','L','XL','XXL']);
-    document.getElementById('pdSizeBtns').innerHTML = sizes.map(s =>
-        `<button class="size-btn" onclick="selectSize('${s}',this)">${s}</button>`
-    ).join('');
+    renderModalSizeChips(p, sizes, '');
 
     /* Colours */
-    const colorBtns = document.getElementById('pdColorBtns');
-    if (p.colors && p.colors.length) {
-        colorBtns.innerHTML = p.colors.map(c => {
-            const hex = COLOR_HEX[c] || '#888';
-            return `<button class="color-btn" onclick="selectColor('${c}',this)">
-                <span class="color-dot" style="background:${hex}"></span>
-                <span class="color-label">${c}</span>
-            </button>`;
-        }).join('');
-    } else {
-        colorBtns.innerHTML = `<p class="pd-no-select">All colours available — mention your preference on WhatsApp</p>`;
-    }
+    renderModalColorChips(p, '');
 
     /* Reset tabs */
     document.querySelectorAll('.pd-tab').forEach(t => t.classList.remove('active'));
@@ -254,10 +241,56 @@ window.switchPdTab = function(tab, el) {
     document.getElementById('pdTab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
 };
 
+function renderModalSizeChips(p, sizes, selColor) {
+    document.getElementById('pdSizeBtns').innerHTML = sizes.map(s => {
+        const inStock = frontSizeHasStock(p, s);
+        return `<button class="size-btn${inStock ? '' : ' oos'}"
+            ${inStock ? `onclick="selectSize('${s}',this)"` : 'disabled'}
+            title="${inStock ? s : s + ' — Out of Stock'}">
+            ${s}${!inStock ? '<br><small>Out</small>' : ''}
+        </button>`;
+    }).join('');
+}
+
+function renderModalColorChips(p, selSize) {
+    const colorBtns = document.getElementById('pdColorBtns');
+    if (p.colors && p.colors.length) {
+        colorBtns.innerHTML = p.colors.map(c => {
+            const hex     = COLOR_HEX[c] || '#888';
+            const inStock = selSize ? frontColorHasStock(p, selSize, c) : true;
+            return `<button class="color-btn${inStock ? '' : ' oos'}"
+                ${inStock ? `onclick="selectColor('${c}',this)"` : 'disabled'}>
+                <span class="color-dot" style="background:${hex};${!inStock ? 'opacity:.35' : ''}"></span>
+                <span class="color-label">${c}${!inStock ? '<br><small style=\'color:#ef4444\'>Out</small>' : ''}</span>
+            </button>`;
+        }).join('');
+    } else {
+        colorBtns.innerHTML = `<p class="pd-no-select">All colours available — mention your preference on WhatsApp</p>`;
+    }
+}
+
+function frontSizeHasStock(p, size) {
+    const inv = p.inventory;
+    if (!inv) return true;
+    if (p.colors && p.colors.length) {
+        return p.colors.some(c => { const s = inv[`${size}_${c}`]; return s === undefined || s > 0; });
+    }
+    const s = inv[size];
+    return s === undefined || s > 0;
+}
+
+function frontColorHasStock(p, size, color) {
+    const inv = p.inventory;
+    if (!inv) return true;
+    const s = inv[`${size}_${color}`];
+    return s === undefined || s > 0;
+}
+
 window.selectSize = function(size, el) {
     document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
     el.classList.add('active');
     selectedSize = size;
+    if (currentProduct) renderModalColorChips(currentProduct, size);
 };
 
 window.selectColor = function(color, el) {
