@@ -237,12 +237,16 @@ window.openProductModal = function(id) {
     document.querySelector('.pd-tab[data-tab="details"]').classList.add('active');
     document.getElementById('pdTabDetails').classList.add('active');
 
-    document.getElementById('pdOverlay').classList.add('open');
+    const overlay = document.getElementById('pdOverlay');
+    overlay.style.display = 'flex';
+    requestAnimationFrame(() => requestAnimationFrame(() => overlay.classList.add('open')));
     document.body.style.overflow = 'hidden';
 };
 
 window.closeProductModal = function() {
-    document.getElementById('pdOverlay').classList.remove('open');
+    const overlay = document.getElementById('pdOverlay');
+    overlay.classList.remove('open');
+    overlay.addEventListener('transitionend', () => { overlay.style.display = 'none'; }, { once: true });
     document.body.style.overflow = '';
 };
 
