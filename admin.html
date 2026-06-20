@@ -9,6 +9,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="css/admin.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://unpkg.com/@zxing/browser@0.1.4/umd/index.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
 
@@ -58,6 +62,16 @@
             <a href="#" class="nav-item" data-section="inquiries" onclick="showSection('inquiries')">
                 <i class="fas fa-envelope"></i> Inquiries
                 <span class="badge-count" id="inquiryCount" style="display:none;">0</span>
+            </a>
+            <a href="#" class="nav-item" data-section="customers" onclick="showSection('customers')">
+                <i class="fas fa-users"></i> Customers
+            </a>
+            <a href="#" class="nav-item" data-section="returns" onclick="showSection('returns')">
+                <i class="fas fa-undo-alt"></i> Returns
+            </a>
+            <a href="#" class="nav-item" data-section="reviews" onclick="showSection('reviews')">
+                <i class="fas fa-star"></i> Reviews
+                <span class="badge-count" id="reviewsCount" style="display:none;">0</span>
             </a>
             <a href="#" class="nav-item" data-section="inventory" onclick="showSection('inventory')">
                 <i class="fas fa-warehouse"></i> Inventory
@@ -128,22 +142,26 @@
                     <!-- Left column -->
                     <div class="form-col">
 
-                        <div class="image-upload-area" id="imageUploadArea" onclick="document.getElementById('imageInput').click()">
-                            <div id="imagePreview" class="image-preview-placeholder">
-                                <i class="fas fa-cloud-upload-alt"></i>
-                                <p>Click to upload photo</p>
-                                <small>JPG, PNG · Max 5 MB · Will be resized to 800×600</small>
+                        <div class="multi-image-section">
+                            <div class="multi-image-grid" id="multiImageGrid">
+                                <div class="img-slot primary" id="imgSlot0" onclick="triggerImageUpload(0)">
+                                    <div class="img-slot-placeholder"><i class="fas fa-camera"></i><small>Main Photo</small></div>
+                                </div>
+                                <div class="img-slot" id="imgSlot1" onclick="triggerImageUpload(1)">
+                                    <div class="img-slot-placeholder"><i class="fas fa-plus"></i></div>
+                                </div>
+                                <div class="img-slot" id="imgSlot2" onclick="triggerImageUpload(2)">
+                                    <div class="img-slot-placeholder"><i class="fas fa-plus"></i></div>
+                                </div>
+                                <div class="img-slot" id="imgSlot3" onclick="triggerImageUpload(3)">
+                                    <div class="img-slot-placeholder"><i class="fas fa-plus"></i></div>
+                                </div>
+                                <div class="img-slot" id="imgSlot4" onclick="triggerImageUpload(4)">
+                                    <div class="img-slot-placeholder"><i class="fas fa-plus"></i></div>
+                                </div>
                             </div>
-                            <img id="imagePreviewImg" src="" alt="Preview" style="display:none;">
-                        </div>
-                        <input type="file" id="imageInput" accept="image/*" style="display:none;" onchange="handleImageSelect(event)">
-                        <div id="imageActions" style="display:none; margin-top:10px; gap:8px; display:none; flex-direction:row;">
-                            <button type="button" class="btn-sm-outline" onclick="document.getElementById('imageInput').click()">
-                                <i class="fas fa-exchange-alt"></i> Change
-                            </button>
-                            <button type="button" class="btn-sm-outline danger" onclick="removeImage()">
-                                <i class="fas fa-trash"></i> Remove
-                            </button>
+                            <input type="file" id="multiImageInput" accept="image/*" style="display:none;" onchange="handleMultiImageSelect(event)">
+                            <small class="field-hint">First photo is main. Up to 5 photos. Click slot to upload.</small>
                         </div>
 
                         <div class="field mt-16">
@@ -198,6 +216,11 @@
                         <div class="field">
                             <label>Fabric / Material</label>
                             <input type="text" id="pFabric" placeholder="e.g. 100% Cotton, Poly-Cotton blend">
+                        </div>
+
+                        <div class="field">
+                            <label>Barcode / SKU</label>
+                            <input type="text" id="pBarcode" placeholder="e.g. 8901234567890">
                         </div>
 
                         <div class="field">
@@ -309,6 +332,28 @@
                     <a href="index.html" target="_blank" class="quick-btn"><i class="fas fa-eye"></i> View Site</a>
                 </div>
             </div>
+            <div id="lowStockAlert" class="low-stock-alert" style="display:none;">
+                <div class="alert-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                <div>
+                    <strong>Low Stock Alert!</strong>
+                    <p id="lowStockList"></p>
+                </div>
+                <button onclick="whatsappLowStock()"><i class="fab fa-whatsapp"></i> Alert via WhatsApp</button>
+            </div>
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h4><i class="fas fa-chart-line"></i> Revenue (Last 30 Days)</h4>
+                    <canvas id="revenueChart" height="200"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h4><i class="fas fa-chart-pie"></i> Payment Methods</h4>
+                    <canvas id="paymentChart" height="200"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h4><i class="fas fa-chart-bar"></i> Top Products</h4>
+                    <canvas id="topProductsChart" height="200"></canvas>
+                </div>
+            </div>
         </section>
 
         <!-- ── INVENTORY SECTION ── -->
@@ -337,7 +382,12 @@
                 <!-- LEFT: Product Catalog -->
                 <div class="pos-catalog">
                     <div class="pos-search-bar">
-                        <input type="text" id="posSearch" placeholder="&#xF002;  Search products…" oninput="renderPosProducts()">
+                        <div class="pos-search-row">
+                            <input type="text" id="posSearch" placeholder="&#xF002;  Search products…" oninput="renderPosProducts()">
+                            <button class="pos-scan-btn" onclick="startBarcodeScanner()" title="Scan barcode">
+                                <i class="fas fa-barcode"></i>
+                            </button>
+                        </div>
                         <div class="pos-cat-tabs">
                             <button class="pos-cat active" onclick="setPosCategory(this,'')">All</button>
                             <button class="pos-cat" onclick="setPosCategory(this,'T-Shirt')">T-Shirts</button>
@@ -358,6 +408,9 @@
                         <button class="pos-clear-btn" onclick="clearPosCart()" title="Clear cart">
                             <i class="fas fa-trash"></i> Clear
                         </button>
+                        <button class="btn-sm-outline" onclick="showEODSummary()" style="font-size:.75rem;padding:5px 10px;">
+                            <i class="fas fa-chart-bar"></i> Day Summary
+                        </button>
                     </div>
 
                     <div class="pos-cart-items" id="posCartItems">
@@ -371,7 +424,12 @@
                         <!-- Customer -->
                         <div class="pos-customer">
                             <input type="text"  id="posCustomerName"  placeholder="Customer name (optional)">
-                            <input type="tel"   id="posCustomerPhone" placeholder="Phone (optional)">
+                            <input type="tel" id="posCustomerPhone" placeholder="Phone (optional)" oninput="checkPosLoyalty()">
+                        </div>
+                        <div class="pos-loyalty" id="posLoyaltyInfo" style="display:none;">
+                            <i class="fas fa-star"></i>
+                            <span id="posLoyaltyPoints">0 points</span>
+                            <button class="pos-redeem-btn" onclick="redeemLoyaltyPoints()" id="posRedeemBtn">Redeem</button>
                         </div>
 
                         <!-- Coupon -->
@@ -392,6 +450,10 @@
                             <div class="pos-total-row grand">
                                 <span>Total</span><span id="posGrandTotal">₹0</span>
                             </div>
+                        </div>
+                        <div id="posUpiQr" style="display:none;text-align:center;padding:10px;background:#f9f9f9;border-radius:8px;"></div>
+                        <div id="posPointsEarn" style="display:none;font-size:.75rem;color:#388e3c;text-align:center;padding:4px 0;">
+                            <i class="fas fa-star"></i> <span id="posPointsEarnText"></span>
                         </div>
 
                         <!-- Payment method -->
@@ -433,6 +495,7 @@
                     </select>
                 </div>
                 <button class="btn-add" onclick="openOrderForm()"><i class="fas fa-plus"></i> Log Order</button>
+                <button class="btn-export" onclick="exportOrdersCSV()"><i class="fas fa-download"></i> Export CSV</button>
             </div>
             <div id="ordersList">
                 <div class="list-loading"><i class="fas fa-spinner fa-spin"></i> Loading orders…</div>
@@ -633,6 +696,162 @@ service firebase.storage {
   }
 }</pre>
             </div>
+
+            <div class="settings-card">
+                <h3><i class="fas fa-mobile-alt"></i> UPI Settings</h3>
+                <div class="field">
+                    <label>Your UPI ID</label>
+                    <input type="text" id="settingsUpiId" placeholder="9079661164@paytm" oninput="saveUpiId()">
+                    <small class="field-hint">This QR code will show in POS when UPI is selected</small>
+                </div>
+                <div id="upiQrPreview" style="text-align:center;margin-top:12px;"></div>
+            </div>
+
+            <div class="settings-card">
+                <h3><i class="fas fa-users-cog"></i> Staff Management</h3>
+                <p>Add staff members who can access POS and Orders only. They cannot manage products, coupons, or settings.</p>
+                <div class="staff-form">
+                    <input type="email" id="staffEmail" placeholder="staff@example.com">
+                    <button onclick="addStaff()">Add Staff</button>
+                </div>
+                <div id="staffList" class="staff-list"></div>
+                <p class="field-hint" style="margin-top:8px;">After adding, ask staff to go to admin.html and sign in with their email. You must first create their Firebase Auth account in Firebase Console → Authentication → Add User.</p>
+            </div>
+        </section>
+
+        <!-- ── CUSTOMERS SECTION ── -->
+        <section id="sectionCustomers" class="content-section">
+            <div class="section-toolbar">
+                <div class="toolbar-left">
+                    <input type="text" id="customerSearch" class="search-box" placeholder="Search by name or phone…" oninput="filterCustomers()">
+                </div>
+            </div>
+            <div id="customersList">
+                <div class="list-loading"><i class="fas fa-spinner fa-spin"></i> Loading customers…</div>
+            </div>
+        </section>
+
+        <!-- ── RETURNS SECTION ── -->
+        <section id="sectionReturns" class="content-section">
+            <div class="section-toolbar">
+                <div class="toolbar-left">
+                    <select id="filterReturnStatus" class="filter-sel" onchange="filterReturns()">
+                        <option value="">All Returns</option>
+                        <option>Pending</option>
+                        <option>Refunded</option>
+                        <option>Exchanged</option>
+                        <option>Rejected</option>
+                    </select>
+                </div>
+                <button class="btn-add" onclick="openReturnForm()"><i class="fas fa-plus"></i> Log Return</button>
+            </div>
+            <div id="returnsList">
+                <div class="list-loading"><i class="fas fa-spinner fa-spin"></i> Loading returns…</div>
+            </div>
+        </section>
+
+        <!-- ── RETURN FORM SECTION ── -->
+        <section id="sectionReturnForm" class="content-section">
+            <div class="form-header">
+                <button class="btn-back" onclick="showSection('returns')"><i class="fas fa-arrow-left"></i> Back</button>
+                <h3 id="returnFormTitle">Log Return</h3>
+            </div>
+            <form id="returnForm" class="product-form" onsubmit="saveReturn(event)">
+                <input type="hidden" id="editReturnId">
+                <div class="form-cols">
+                    <div class="form-col">
+                        <div class="field-row">
+                            <div class="field">
+                                <label>Customer Name *</label>
+                                <input type="text" id="rName" placeholder="Customer name" required>
+                            </div>
+                            <div class="field">
+                                <label>Phone</label>
+                                <input type="tel" id="rPhone" placeholder="+91 98765 43210">
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label>Original Order Reference</label>
+                            <input type="text" id="rOrderRef" placeholder="e.g. POS-1234567890">
+                        </div>
+                        <div class="field-row">
+                            <div class="field">
+                                <label>Product</label>
+                                <select id="rProduct"><option value="">— Select —</option></select>
+                            </div>
+                            <div class="field">
+                                <label>Size</label>
+                                <input type="text" id="rSize" placeholder="e.g. L">
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label>Colour</label>
+                            <input type="text" id="rColor" placeholder="e.g. Navy Blue">
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="field">
+                            <label>Reason *</label>
+                            <select id="rReason" required>
+                                <option value="">Select reason…</option>
+                                <option>Wrong Size</option>
+                                <option>Defective</option>
+                                <option>Wrong Product</option>
+                                <option>Not as Described</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+                        <div class="field-row">
+                            <div class="field">
+                                <label>Refund Amount (₹)</label>
+                                <input type="number" id="rAmount" placeholder="0" min="0" step="1">
+                            </div>
+                            <div class="field">
+                                <label>Status *</label>
+                                <select id="rStatus" required>
+                                    <option value="Pending">Pending</option>
+                                    <option value="Refunded">Refunded</option>
+                                    <option value="Exchanged">Exchanged</option>
+                                    <option value="Rejected">Rejected</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="toggle-row">
+                            <label>Restock item (add qty back to inventory)</label>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="rRestock">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="field">
+                            <label>Notes</label>
+                            <textarea id="rNotes" rows="3" placeholder="Additional notes…"></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn-cancel" onclick="showSection('returns')">Cancel</button>
+                            <button type="submit" class="btn-save" id="saveReturnBtn">
+                                <i class="fas fa-save"></i> Save Return
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </section>
+
+        <!-- ── REVIEWS SECTION ── -->
+        <section id="sectionReviews" class="content-section">
+            <div class="section-toolbar">
+                <div class="toolbar-left">
+                    <select id="filterReviewStatus" class="filter-sel" onchange="filterReviews()">
+                        <option value="">All Reviews</option>
+                        <option value="pending">Pending</option>
+                        <option value="approved">Approved</option>
+                    </select>
+                </div>
+            </div>
+            <div id="reviewsList">
+                <div class="list-loading"><i class="fas fa-spinner fa-spin"></i> Loading reviews…</div>
+            </div>
         </section>
 
     </div><!-- /main-wrap -->
@@ -695,6 +914,7 @@ service firebase.storage {
         <div class="receipt-actions">
             <button onclick="printReceipt()"><i class="fas fa-print"></i> Print</button>
             <button onclick="whatsappReceipt()" class="wa-btn"><i class="fab fa-whatsapp"></i> WhatsApp</button>
+            <button onclick="generateGSTInvoice(posLastSale)" class="inv-btn"><i class="fas fa-file-invoice"></i> Invoice</button>
             <button onclick="startNewSale()" class="new-btn"><i class="fas fa-plus"></i> New Sale</button>
         </div>
     </div>
@@ -714,6 +934,28 @@ service firebase.storage {
 </div>
 
 <div id="adminToast" class="admin-toast"></div>
+
+<!-- Barcode Scanner Modal -->
+<div id="scannerModal" class="modal-overlay" style="display:none;">
+    <div class="scanner-box">
+        <button class="pos-item-close" onclick="stopBarcodeScanner()"><i class="fas fa-times"></i></button>
+        <h4><i class="fas fa-barcode"></i> Scan Product Barcode</h4>
+        <div id="scannerPreview"></div>
+        <p class="scanner-hint">Point camera at barcode</p>
+        <p id="scannerStatus" style="text-align:center;color:#666;font-size:.85rem;"></p>
+    </div>
+</div>
+
+<!-- EOD Summary Modal -->
+<div id="eodModal" class="modal-overlay" style="display:none;">
+    <div class="eod-box">
+        <button class="pos-item-close" onclick="document.getElementById('eodModal').style.display='none'"><i class="fas fa-times"></i></button>
+        <h3><i class="fas fa-chart-bar"></i> End of Day Summary</h3>
+        <p id="eodDate" style="color:#999;font-size:.82rem;"></p>
+        <div id="eodContent"></div>
+        <button onclick="printEOD()" class="btn-save" style="margin-top:16px;"><i class="fas fa-print"></i> Print</button>
+    </div>
+</div>
 
 <script type="module" src="js/admin.js"></script>
 </body>

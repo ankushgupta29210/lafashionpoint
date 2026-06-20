@@ -1,7 +1,7 @@
 import { db } from './firebase-config.js';
 import {
     collection, onSnapshot, query, orderBy,
-    addDoc, serverTimestamp
+    addDoc, serverTimestamp, getDocs, where
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const WA = '919079661164';
@@ -36,6 +36,120 @@ let allProducts    = [];
 let productsCache  = {};
 let activeCat      = '';
 let activeSort     = '';
+let searchQuery    = '';
+
+/* ============================================================
+   SEARCH
+   ============================================================ */
+window.handleSearch = function() {
+    const input = document.getElementById('siteSearch');
+    const clearBtn = document.getElementById('searchClear');
+    searchQuery = input.value.trim().toLowerCase();
+    clearBtn.style.display = searchQuery ? 'flex' : 'none';
+    renderProducts();
+};
+
+window.clearSearch = function() {
+    const input = document.getElementById('siteSearch');
+    const clearBtn = document.getElementById('searchClear');
+    input.value = '';
+    searchQuery = '';
+    clearBtn.style.display = 'none';
+    renderProducts();
+};
+
+/* ============================================================
+   WISHLIST
+   ============================================================ */
+function getWishlist() {
+    try { return JSON.parse(localStorage.getItem('lfp_wishlist') || '[]'); } catch { return []; }
+}
+function saveWishlist(ids) {
+    localStorage.setItem('lfp_wishlist', JSON.stringify(ids));
+    updateWishlistCount();
+}
+function updateWishlistCount() {
+    const ids = getWishlist();
+    const badge = document.getElementById('wishlistCount');
+    if (!badge) return;
+    if (ids.length) {
+        badge.textContent = ids.length;
+        badge.style.display = 'flex';
+    } else {
+        badge.style.display = 'none';
+    }
+}
+window.isWishlisted = function(id) {
+    return getWishlist().includes(id);
+};
+window.toggleWishlist = function(id, el) {
+    let ids = getWishlist();
+    if (ids.includes(id)) {
+        ids = ids.filter(i => i !== id);
+        el.classList.remove('active');
+        el.querySelector('i').className = 'far fa-heart';
+        showToast('Removed from wishlist');
+    } else {
+        ids.push(id);
+        el.classList.add('active');
+        el.querySelector('i').className = 'fas fa-heart';
+        showToast('Added to wishlist');
+    }
+    saveWishlist(ids);
+};
+window.openWishlist = function() {
+    renderWishlistModal();
+    const ov = document.getElementById('wishlistOverlay');
+    ov.style.display = 'flex';
+    requestAnimationFrame(() => requestAnimationFrame(() => ov.classList.add('open')));
+    document.body.style.overflow = 'hidden';
+};
+window.closeWishlist = function() {
+    const ov = document.getElementById('wishlistOverlay');
+    ov.classList.remove('open');
+    ov.addEventListener('transitionend', () => { ov.style.display = 'none'; }, { once: true });
+    document.body.style.overflow = '';
+};
+function renderWishlistModal() {
+    const ids = getWishlist();
+    const content = document.getElementById('wishlistContent');
+    if (!ids.length) {
+        content.innerHTML = '<div class="wishlist-empty"><i class="far fa-heart"></i><p>Your wishlist is empty.</p></div>';
+        return;
+    }
+    const items = ids.map(id => productsCache[id]).filter(Boolean);
+    if (!items.length) {
+        content.innerHTML = '<div class="wishlist-empty"><i class="far fa-heart"></i><p>Products not loaded yet.</p></div>';
+        return;
+    }
+    content.innerHTML = items.map(p => `
+        <div class="wishlist-item">
+            <div class="wishlist-item-img ${p.imageUrl ? '' : bgClass(p.category)}">
+                ${p.imageUrl ? `<img src="${p.imageUrl}" alt="${p.name}">` : `<i class="fas fa-${iconFor(p.category)}"></i>`}
+            </div>
+            <div class="wishlist-item-info">
+                <p class="wishlist-item-cat">${p.category}</p>
+                <h4>${p.name}</h4>
+                <p class="wishlist-item-price">₹${p.price.toLocaleString('en-IN')}</p>
+            </div>
+            <div class="wishlist-item-actions">
+                <button class="btn btn-gold btn-sm" onclick="closeWishlist();openProductModal('${p.id}')">View</button>
+                <button class="btn-wishlist-remove" onclick="removeFromWishlistModal('${p.id}')"><i class="fas fa-trash-alt"></i></button>
+            </div>
+        </div>
+    `).join('');
+}
+window.removeFromWishlistModal = function(id) {
+    let ids = getWishlist().filter(i => i !== id);
+    saveWishlist(ids);
+    renderWishlistModal();
+    // update card heart if visible
+    const btn = document.querySelector(`.wishlist-btn[onclick*="'${id}'"]`);
+    if (btn) {
+        btn.classList.remove('active');
+        btn.querySelector('i').className = 'far fa-heart';
+    }
+};
 
 /* ============================================================
    PRODUCT CARD
@@ -52,11 +166,18 @@ function productCard(p) {
     const origPriceHtml = p.originalPrice && p.originalPrice > p.price
         ? `<span class="price-original">₹${p.originalPrice.toLocaleString('en-IN')}</span>` : '';
 
+    const wishlisted = isWishlisted(p.id);
+
     return `
     <div class="product-card reveal" onclick="openProductModal('${p.id}')">
         <div class="product-img ${p.imageUrl ? 'has-photo' : bgClass(p.category)}">
             ${imgHtml}
             ${badgeHtml}${discountBadge}
+            <button class="wishlist-btn ${wishlisted ? 'active' : ''}"
+                onclick="event.stopPropagation();toggleWishlist('${p.id}',this)"
+                title="Add to wishlist">
+                <i class="${wishlisted ? 'fas' : 'far'} fa-heart"></i>
+            </button>
             <div class="product-hover"><span class="btn btn-gold btn-sm">View Details</span></div>
         </div>
         <div class="product-body">
@@ -79,11 +200,18 @@ function bgClass(cat) {
 }
 
 /* ============================================================
-   RENDER WITH FILTER / SORT
+   RENDER WITH FILTER / SORT / SEARCH
    ============================================================ */
 function renderProducts() {
     let products = [...allProducts];
-    if (activeCat)          products = products.filter(p => p.category === activeCat);
+    if (activeCat) products = products.filter(p => p.category === activeCat);
+    if (searchQuery) {
+        products = products.filter(p =>
+            (p.name || '').toLowerCase().includes(searchQuery) ||
+            (p.category || '').toLowerCase().includes(searchQuery) ||
+            (p.description || '').toLowerCase().includes(searchQuery)
+        );
+    }
     if (activeSort === 'low')  products.sort((a, b) => a.price - b.price);
     if (activeSort === 'high') products.sort((a, b) => b.price - a.price);
 
@@ -93,7 +221,7 @@ function renderProducts() {
     if (!products.length) {
         grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 24px;color:#666;">
             <i class="fas fa-box-open" style="font-size:2.5rem;color:#ddd;display:block;margin-bottom:12px;"></i>
-            <p>No products in this category yet.</p></div>`;
+            <p>No products found.</p></div>`;
     } else {
         grid.innerHTML = products.map(p => productCard(p)).join('');
         activateReveal(grid.querySelectorAll('.reveal'));
@@ -113,6 +241,7 @@ onSnapshot(q, snap => {
     productsCache = {};
     allProducts.forEach(p => { productsCache[p.id] = p; });
     renderProducts();
+    updateWishlistCount();
 }, err => {
     console.error('Firestore error:', err);
     loading.style.display = 'none';
@@ -140,11 +269,67 @@ if (sortSelect) {
 }
 
 /* ============================================================
-   PRODUCT DETAIL MODAL
+   PRODUCT DETAIL MODAL — CAROUSEL
    ============================================================ */
 let selectedSize   = '';
 let selectedColor  = '';
 let currentProduct = null;
+let carouselImages = [];
+window.currentCarouselIdx = 0;
+
+window.changeModalImage = function(idx) {
+    if (!carouselImages.length) return;
+    idx = (idx + carouselImages.length) % carouselImages.length;
+    window.currentCarouselIdx = idx;
+    const mainImg = document.getElementById('pdImg');
+    mainImg.src = carouselImages[idx];
+
+    // Update thumbs
+    document.querySelectorAll('.pd-car-thumb').forEach((t, i) => {
+        t.classList.toggle('active', i === idx);
+    });
+};
+
+function buildCarousel(p) {
+    const images = (p.images && p.images.length) ? p.images : (p.imageUrl ? [p.imageUrl] : []);
+    carouselImages = images;
+    window.currentCarouselIdx = 0;
+
+    const placeholder = document.getElementById('pdImgPlaceholder');
+    const carousel    = document.getElementById('pdCarousel');
+    const imgCol      = document.getElementById('pdImageCol');
+
+    if (!images.length) {
+        carousel.style.display  = 'none';
+        placeholder.innerHTML   = `<i class="fas fa-${iconFor(p.category)}"></i>`;
+        placeholder.style.display = 'flex';
+        imgCol.className = 'pd-image-col ' + bgClass(p.category);
+        return;
+    }
+
+    placeholder.style.display = 'none';
+    carousel.style.display    = 'flex';
+    imgCol.className          = 'pd-image-col';
+
+    const mainImg = document.getElementById('pdImg');
+    mainImg.src   = images[0];
+    mainImg.alt   = p.name;
+
+    const thumbsEl = document.getElementById('pdCarThumbs');
+    if (images.length > 1) {
+        thumbsEl.innerHTML = images.map((src, i) =>
+            `<img src="${src}" alt="Image ${i+1}" class="pd-car-thumb ${i===0?'active':''}" onclick="changeModalImage(${i})">`
+        ).join('');
+        thumbsEl.style.display = 'flex';
+    } else {
+        thumbsEl.innerHTML = '';
+        thumbsEl.style.display = 'none';
+    }
+
+    // show/hide arrows
+    const arrows = carousel.querySelectorAll('.pd-car-arrow');
+    arrows.forEach(a => { a.style.display = images.length > 1 ? 'flex' : 'none'; });
+}
 
 window.openProductModal = function(id) {
     const p = productsCache[id];
@@ -153,21 +338,8 @@ window.openProductModal = function(id) {
     selectedSize   = '';
     selectedColor  = '';
 
-    /* Image */
-    const img = document.getElementById('pdImg');
-    const placeholder = document.getElementById('pdImgPlaceholder');
-    if (p.imageUrl) {
-        img.src = p.imageUrl;
-        img.alt = p.name;
-        img.style.display = 'block';
-        placeholder.style.display = 'none';
-    } else {
-        img.style.display = 'none';
-        placeholder.innerHTML = `<i class="fas fa-${iconFor(p.category)}"></i>`;
-        placeholder.style.display = 'flex';
-    }
-    const imgCol = document.getElementById('pdImageCol');
-    imgCol.className = 'pd-image-col ' + (p.imageUrl ? '' : bgClass(p.category));
+    /* Carousel / images */
+    buildCarousel(p);
 
     /* Badge */
     const badge = document.getElementById('pdBadge');
@@ -220,6 +392,13 @@ window.openProductModal = function(id) {
     document.querySelectorAll('.pd-tab-content').forEach(c => c.classList.remove('active'));
     document.querySelector('.pd-tab[data-tab="details"]').classList.add('active');
     document.getElementById('pdTabDetails').classList.add('active');
+
+    /* Related products */
+    buildRelatedProducts(p);
+
+    /* Reviews */
+    loadReviews(p.id);
+    resetReviewForm();
 
     const overlay = document.getElementById('pdOverlay');
     overlay.style.display = 'flex';
@@ -336,7 +515,206 @@ window.pdOrderNow = function() {
     window.open(`https://wa.me/${WA}?text=${msg}`, '_blank', 'noopener');
 };
 
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeProductModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeProductModal(); closeWishlist(); } });
+
+/* ============================================================
+   BUY NOW — RAZORPAY (Feature 12)
+   ============================================================ */
+window.buyNow = function() {
+    if (!currentProduct) return;
+    if (!selectedSize && currentProduct.sizes && currentProduct.sizes.length) {
+        showToast('Please select a size first');
+        return;
+    }
+    if (typeof Razorpay === 'undefined') {
+        showToast('Payment gateway loading… please try WhatsApp for now');
+        window.open(`https://wa.me/${WA}?text=${encodeURIComponent('I want to order: ' + currentProduct.name)}`, '_blank');
+        return;
+    }
+    const options = {
+        key: window.RAZORPAY_KEY || 'rzp_test_PLACEHOLDER',
+        amount: currentProduct.price * 100,
+        currency: 'INR',
+        name: 'LaFashionPoint',
+        description: `${currentProduct.name} - Size: ${selectedSize || 'N/A'}`,
+        image: 'logo.png',
+        handler: function(response) {
+            showToast('Payment successful! Order ID: ' + response.razorpay_payment_id);
+            closeProductModal();
+        },
+        prefill: { contact: '' },
+        theme: { color: '#C9A84C' }
+    };
+    new Razorpay(options).open();
+};
+
+/* ============================================================
+   RELATED PRODUCTS (Feature 7)
+   ============================================================ */
+function buildRelatedProducts(p) {
+    const related = allProducts
+        .filter(x => x.category === p.category && x.id !== p.id)
+        .slice(0, 3);
+    const container = document.getElementById('pdRelated');
+    const grid      = document.getElementById('pdRelatedGrid');
+    if (!related.length) { container.style.display = 'none'; return; }
+    container.style.display = 'block';
+    grid.innerHTML = related.map(r => `
+        <div class="pd-related-card" onclick="closeProductModal();setTimeout(()=>openProductModal('${r.id}'),200)">
+            <div class="pd-related-img ${r.imageUrl ? '' : bgClass(r.category)}">
+                ${r.imageUrl ? `<img src="${r.imageUrl}" alt="${r.name}">` : `<i class="fas fa-${iconFor(r.category)}"></i>`}
+            </div>
+            <p class="pd-related-name">${r.name}</p>
+            <p class="pd-related-price">₹${r.price.toLocaleString('en-IN')}</p>
+        </div>
+    `).join('');
+}
+
+/* ============================================================
+   REVIEWS (Feature 5)
+   ============================================================ */
+let reviewRating = 0;
+
+function resetReviewForm() {
+    reviewRating = 0;
+    const nameEl    = document.getElementById('reviewName');
+    const commentEl = document.getElementById('reviewComment');
+    const thanks    = document.getElementById('reviewThanks');
+    if (nameEl)    nameEl.value    = '';
+    if (commentEl) commentEl.value = '';
+    if (thanks)    thanks.style.display = 'none';
+    buildStarInput();
+}
+
+function buildStarInput() {
+    const container = document.getElementById('starInput');
+    if (!container) return;
+    container.innerHTML = [1,2,3,4,5].map(n =>
+        `<i class="${n <= reviewRating ? 'fas' : 'far'} fa-star star-clickable" onclick="setReviewRating(${n})"></i>`
+    ).join('');
+}
+
+window.setReviewRating = function(n) {
+    reviewRating = n;
+    buildStarInput();
+};
+
+function starsHtml(rating) {
+    return [1,2,3,4,5].map(n =>
+        `<i class="${n <= rating ? 'fas' : 'far'} fa-star" style="color:${n <= rating ? '#f59e0b' : '#ddd'};font-size:.85rem;"></i>`
+    ).join('');
+}
+
+async function loadReviews(productId) {
+    const listEl  = document.getElementById('pdReviewsList');
+    const avgEl   = document.getElementById('pdAvgRating');
+    if (!listEl || !avgEl) return;
+    listEl.innerHTML = '<p style="font-size:.8rem;color:#999;">Loading reviews…</p>';
+    avgEl.innerHTML  = '';
+    try {
+        const snap = await getDocs(
+            query(collection(db, 'reviews'),
+                where('productId', '==', productId),
+                where('approved', '==', true),
+                orderBy('createdAt', 'desc')
+            )
+        );
+        const reviews = snap.docs.map(d => d.data());
+        if (!reviews.length) {
+            listEl.innerHTML = '<p class="no-reviews">No reviews yet. Be the first!</p>';
+            avgEl.innerHTML  = '';
+            return;
+        }
+        const avg = (reviews.reduce((s, r) => s + (r.rating || 0), 0) / reviews.length).toFixed(1);
+        avgEl.innerHTML = `${starsHtml(Math.round(avg))} <span class="avg-num">${avg}</span> <span class="avg-count">(${reviews.length})</span>`;
+        listEl.innerHTML = reviews.map(r => `
+            <div class="review-card">
+                <div class="review-top">
+                    <span class="review-name">${r.name || 'Anonymous'}</span>
+                    <span class="review-stars">${starsHtml(r.rating || 0)}</span>
+                </div>
+                <p class="review-comment">${r.comment || ''}</p>
+                <p class="review-date">${r.createdAt?.toDate ? r.createdAt.toDate().toLocaleDateString('en-IN') : ''}</p>
+            </div>
+        `).join('');
+    } catch (err) {
+        console.warn('Reviews load error:', err);
+        listEl.innerHTML = '<p class="no-reviews">Could not load reviews.</p>';
+    }
+}
+
+window.submitReview = function() {
+    if (!currentProduct) return;
+    if (!reviewRating) { showToast('Please select a star rating'); return; }
+    const name    = (document.getElementById('reviewName').value || '').trim();
+    const comment = (document.getElementById('reviewComment').value || '').trim();
+    if (!name)    { showToast('Please enter your name'); return; }
+    if (!comment) { showToast('Please write a comment'); return; }
+
+    addDoc(collection(db, 'reviews'), {
+        productId: currentProduct.id,
+        name,
+        rating: reviewRating,
+        comment,
+        approved: false,
+        createdAt: serverTimestamp()
+    }).then(() => {
+        document.getElementById('reviewThanks').style.display = 'block';
+        document.getElementById('reviewName').value    = '';
+        document.getElementById('reviewComment').value = '';
+        reviewRating = 0;
+        buildStarInput();
+    }).catch(err => {
+        console.error(err);
+        showToast('Could not submit review. Try again.');
+    });
+};
+
+/* ============================================================
+   ORDER TRACKING (Feature 6)
+   ============================================================ */
+window.trackOrder = function() {
+    const raw   = (document.getElementById('trackPhone').value || '').trim();
+    const phone = raw.replace(/[\s\-\+]/g, '').replace(/^91/, '');
+    const resultsEl = document.getElementById('trackResults');
+    if (phone.length < 10) { showToast('Please enter a valid phone number'); return; }
+    resultsEl.style.display = 'block';
+    resultsEl.innerHTML = '<div class="track-loading"><div class="spinner"></div><p>Searching…</p></div>';
+
+    getDocs(query(collection(db, 'tracking'), orderBy('createdAt', 'desc')))
+        .then(snap => {
+            const orders = snap.docs
+                .map(d => d.data())
+                .filter(o => {
+                    const p = (o.phone || '').replace(/[\s\-\+]/g, '').replace(/^91/, '');
+                    return p === phone;
+                });
+            if (!orders.length) {
+                resultsEl.innerHTML = '<div class="track-empty"><i class="fas fa-search"></i><p>No orders found for this number.</p></div>';
+                return;
+            }
+            const statusColor = { Pending:'#f59e0b', Shipped:'#3b82f6', Delivered:'#22c55e', Cancelled:'#ef4444' };
+            resultsEl.innerHTML = orders.map(o => {
+                const col = statusColor[o.status] || '#888';
+                const date = o.createdAt?.toDate ? o.createdAt.toDate().toLocaleDateString('en-IN') : '';
+                return `
+                <div class="track-card">
+                    <div class="track-card-top">
+                        <div>
+                            <p class="track-product">${o.productName || 'Order'}</p>
+                            <p class="track-date">${date}</p>
+                        </div>
+                        <span class="track-badge" style="background:${col}20;color:${col};border:1px solid ${col}40;">${o.status || 'Pending'}</span>
+                    </div>
+                    ${o.note ? `<p class="track-note">${o.note}</p>` : ''}
+                </div>`;
+            }).join('');
+        })
+        .catch(err => {
+            console.error(err);
+            resultsEl.innerHTML = '<div class="track-empty"><i class="fas fa-exclamation-circle"></i><p>Could not fetch orders. Please try again.</p></div>';
+        });
+};
 
 /* ============================================================
    COUPONS — load from Firestore with hardcoded fallback
@@ -383,6 +761,112 @@ onSnapshot(
     },
     () => { renderCoupons(DEFAULT_COUPONS); }
 );
+
+/* ============================================================
+   TESTIMONIALS (Feature 9)
+   ============================================================ */
+const TESTIMONIALS = [
+    { name:'Rahul Sharma',  location:'Jaipur',       text:'Ordered a polo T-shirt and received it in 4 days. Quality is amazing for the price!',                          rating:5 },
+    { name:'Vikram Singh',  location:'Delhi',         text:'The hoodie is super warm and the colour is exactly as shown. Will order again!',                               rating:5 },
+    { name:'Arjun Patel',   location:'Mumbai',        text:'Fast delivery, great packing, and the jeans fit perfectly. Highly recommended!',                               rating:5 },
+    { name:'Deepak Kumar',  location:'Chandigarh',    text:'Best men\'s fashion store for this price range. Already ordered 3 times!',                                     rating:5 },
+    { name:'Sunil Gupta',   location:'Hanumangarh',   text:'Local store but delivers all over India. Very proud to support local business!',                               rating:5 },
+];
+
+let testimonialIdx = 0;
+let testimonialTimer = null;
+
+function getTestimonialsPerView() {
+    return window.innerWidth >= 768 ? 3 : 1;
+}
+
+function renderTestimonials() {
+    const track  = document.getElementById('testimonialsTrack');
+    const dots   = document.getElementById('testDots');
+    if (!track || !dots) return;
+
+    const perView = getTestimonialsPerView();
+    const total   = TESTIMONIALS.length;
+
+    // Clamp index
+    if (testimonialIdx < 0) testimonialIdx = total - 1;
+    if (testimonialIdx >= total) testimonialIdx = 0;
+
+    // Build visible group starting from testimonialIdx
+    const visible = [];
+    for (let i = 0; i < Math.min(perView, total); i++) {
+        visible.push(TESTIMONIALS[(testimonialIdx + i) % total]);
+    }
+
+    track.innerHTML = visible.map(t => `
+        <div class="test-card">
+            <div class="test-quote"><i class="fas fa-quote-left"></i></div>
+            <p class="test-text">${t.text}</p>
+            <div class="test-stars">${starsHtml(t.rating)}</div>
+            <div class="test-author">
+                <span class="test-name">${t.name}</span>
+                <span class="test-loc"><i class="fas fa-map-marker-alt"></i> ${t.location}</span>
+            </div>
+        </div>
+    `).join('');
+
+    // Dots
+    dots.innerHTML = TESTIMONIALS.map((_, i) =>
+        `<button class="test-dot ${i === testimonialIdx ? 'active' : ''}" onclick="goTestimonial(${i})"></button>`
+    ).join('');
+}
+
+window.prevTestimonial = function() {
+    testimonialIdx = (testimonialIdx - 1 + TESTIMONIALS.length) % TESTIMONIALS.length;
+    renderTestimonials();
+    resetTestimonialTimer();
+};
+
+window.nextTestimonial = function() {
+    testimonialIdx = (testimonialIdx + 1) % TESTIMONIALS.length;
+    renderTestimonials();
+    resetTestimonialTimer();
+};
+
+window.goTestimonial = function(i) {
+    testimonialIdx = i;
+    renderTestimonials();
+    resetTestimonialTimer();
+};
+
+function resetTestimonialTimer() {
+    if (testimonialTimer) clearInterval(testimonialTimer);
+    testimonialTimer = setInterval(() => {
+        testimonialIdx = (testimonialIdx + 1) % TESTIMONIALS.length;
+        renderTestimonials();
+    }, 4000);
+}
+
+// Init testimonials
+renderTestimonials();
+resetTestimonialTimer();
+
+window.addEventListener('resize', renderTestimonials);
+
+/* ============================================================
+   FAQ ACCORDION (Feature 8)
+   ============================================================ */
+window.toggleFaq = function(btn) {
+    const item   = btn.closest('.faq-item');
+    const answer = item.querySelector('.faq-answer');
+    const isOpen = item.classList.contains('open');
+
+    // Close all
+    document.querySelectorAll('.faq-item.open').forEach(i => {
+        i.classList.remove('open');
+        i.querySelector('.faq-answer').style.maxHeight = '0';
+    });
+
+    if (!isOpen) {
+        item.classList.add('open');
+        answer.style.maxHeight = answer.scrollHeight + 'px';
+    }
+};
 
 /* ============================================================
    SCROLL REVEAL
@@ -464,7 +948,7 @@ window.showToast = function(msg) {
    COPY COUPON
    ============================================================ */
 window.copyCoupon = function(code) {
-    navigator.clipboard.writeText(code).then(() => showToast(`✓ Coupon "${code}" copied!`)).catch(() => {
+    navigator.clipboard.writeText(code).then(() => showToast(`Coupon "${code}" copied!`)).catch(() => {
         const el = document.createElement('textarea');
         el.value = code;
         Object.assign(el.style, { position:'fixed', opacity:'0' });
@@ -472,12 +956,12 @@ window.copyCoupon = function(code) {
         el.select();
         document.execCommand('copy');
         document.body.removeChild(el);
-        showToast(`✓ Coupon "${code}" copied!`);
+        showToast(`Coupon "${code}" copied!`);
     });
 };
 
 /* ============================================================
-   CONTACT FORM — saves inquiries to Firestore
+   CONTACT FORM — saves inquiries to Firestore + WhatsApp (Feature 13)
    ============================================================ */
 const contactForm = document.getElementById('contactForm');
 const formSuccess = document.getElementById('formSuccess');
@@ -497,6 +981,13 @@ if (contactForm) {
             await addDoc(collection(db, 'inquiries'), data);
             contactForm.style.display = 'none';
             formSuccess.style.display = 'block';
+
+            // Auto-open WhatsApp with thank you + order prompt
+            const name = data.name || 'there';
+            const autoMsg = encodeURIComponent(`Hi ${name}! Thank you for contacting LaFashionPoint. We received your inquiry${data.product ? ' about ' + data.product : ''}. We'll get back to you within minutes!\n\nFor faster response, reply here on WhatsApp.`);
+            setTimeout(() => {
+                window.open(`https://wa.me/${WA}?text=${autoMsg}`, '_blank', 'noopener');
+            }, 500);
         } catch (err) {
             console.error(err);
             showToast('Could not send. Please WhatsApp us directly!');
@@ -505,3 +996,35 @@ if (contactForm) {
         }
     });
 }
+
+/* ============================================================
+   COOKIE CONSENT (Feature 10)
+   ============================================================ */
+window.acceptCookies = function() {
+    localStorage.setItem('lfp_cookies_accepted', '1');
+    document.getElementById('cookieBanner').style.display = 'none';
+};
+window.declineCookies = function() {
+    document.getElementById('cookieBanner').style.display = 'none';
+};
+
+if (!localStorage.getItem('lfp_cookies_accepted')) {
+    setTimeout(() => {
+        const banner = document.getElementById('cookieBanner');
+        if (banner) banner.style.display = 'flex';
+    }, 1000);
+}
+
+/* ============================================================
+   PWA — Register Service Worker (Feature 1)
+   ============================================================ */
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(err => {
+            console.warn('SW registration failed:', err);
+        });
+    });
+}
+
+// Init wishlist badge on load
+updateWishlistCount();

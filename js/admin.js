@@ -6,7 +6,7 @@ import {
 
 import {
     collection, doc, addDoc, updateDoc, deleteDoc,
-    onSnapshot, query, orderBy, serverTimestamp
+    onSnapshot, query, orderBy, serverTimestamp, getDocs
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 import {
@@ -95,11 +95,12 @@ window.togglePass = () => {
 /* ============================================================
    NAVIGATION
    ============================================================ */
-const SECTIONS = ['dashboard','products','form','inquiries','inventory','pos','orders','orderForm','coupons','couponForm','settings'];
+const SECTIONS = ['dashboard','products','form','inquiries','inventory','pos','orders','orderForm','coupons','couponForm','settings','customers','returns','returnForm','reviews'];
 const TITLES   = {
     dashboard:'Dashboard', products:'Products', form:'',
     inquiries:'Inquiries', inventory:'Inventory', pos:'Point of Sale',
-    orders:'Orders', orderForm:'', coupons:'Coupons', couponForm:'', settings:'Settings'
+    orders:'Orders', orderForm:'', coupons:'Coupons', couponForm:'', settings:'Settings',
+    customers:'Customers', returns:'Returns', returnForm:'', reviews:'Reviews'
 };
 
 window.showSection = name => {
@@ -126,8 +127,12 @@ function startListeners() {
     listenInquiries();
     listenOrders();
     listenCoupons();
+    listenReturns();
+    listenReviews();
+    loadStaffRoles();
     syncOfflineSales();
     watchOnlineStatus();
+    loadUpiSettings();
 }
 
 /* ============================================================
@@ -256,30 +261,39 @@ window.editProduct = async id => {
         chip.classList.toggle('active', (p.sizes || []).includes(chip.dataset.size));
     });
 
-    if (p.imageUrl) {
-        pendingImageUrl = p.imageUrl;
-        const img = document.getElementById('imagePreviewImg');
-        img.src = p.imageUrl;
-        img.style.display = 'block';
-        document.getElementById('imagePreview').style.display  = 'none';
-        document.getElementById('imageActions').style.display  = 'flex';
-    }
+    // Barcode
+    const barcodeEl = document.getElementById('pBarcode');
+    if (barcodeEl) barcodeEl.value = p.barcode || '';
+    // Multi-images
+    pendingImages = [null, null, null, null, null];
+    const imgs = p.images || (p.imageUrl ? [p.imageUrl] : []);
+    imgs.forEach((url, i) => { if (i < 5) { pendingImages[i] = url; updateSlotPreview(i, url); } });
+
     showSection('form');
 };
 
 function resetForm() {
     document.getElementById('productForm').reset();
-    document.getElementById('editId').value                    = '';
-    document.getElementById('imagePreviewImg').style.display   = 'none';
-    document.getElementById('imagePreview').style.display      = 'flex';
-    document.getElementById('imageActions').style.display      = 'none';
-    document.getElementById('uploadProgress').style.display    = 'none';
-    document.getElementById('pFabric').value                   = '';
-    document.getElementById('pColors').value                   = '';
-    document.getElementById('inventoryGrid').innerHTML         = '';
+    document.getElementById('editId').value = '';
+    document.getElementById('uploadProgress').style.display = 'none';
+    document.getElementById('pFabric').value = '';
+    document.getElementById('pColors').value = '';
+    document.getElementById('inventoryGrid').innerHTML = '';
     document.querySelectorAll('.size-chip').forEach(c => c.classList.remove('active'));
-    pendingImageFile = null;
-    pendingImageUrl  = '';
+    const barcodeEl = document.getElementById('pBarcode');
+    if (barcodeEl) barcodeEl.value = '';
+    // Reset multi-images
+    pendingImages = [null, null, null, null, null];
+    activeSlot = 0;
+    for (let i = 0; i < 5; i++) {
+        const slot = document.getElementById(`imgSlot${i}`);
+        if (slot) {
+            slot.innerHTML = i === 0
+                ? `<div class="img-slot-placeholder"><i class="fas fa-camera"></i><small>Main Photo</small></div>`
+                : `<div class="img-slot-placeholder"><i class="fas fa-plus"></i></div>`;
+            slot.style.backgroundImage = '';
+        }
+    }
 }
 
 window.handleImageSelect = e => {
@@ -326,13 +340,20 @@ window.saveProduct = async e => {
     const sizes    = Array.from(document.querySelectorAll('.size-chip.active')).map(c => c.dataset.size);
     const order    = Number(document.getElementById('pOrder').value) || 99;
     const avail    = document.getElementById('pAvailable').checked;
-
-    let imageUrl = pendingImageUrl;
+    const barcode  = document.getElementById('pBarcode')?.value.trim() || null;
 
     try {
-        if (pendingImageFile) {
-            imageUrl = await uploadImage(pendingImageFile, id || Date.now().toString());
-        }
+        // Upload all pending images
+        const uploadedUrls = pendingImages.map(img => (img && typeof img === 'string') ? img : null);
+        const uploadPromises = pendingImages.map(async (img, idx) => {
+            if (img && img instanceof File) {
+                uploadedUrls[idx] = await uploadImage(img, `${id || Date.now()}_${idx}`);
+            }
+        });
+        await Promise.all(uploadPromises);
+        const finalImages = uploadedUrls.filter(Boolean);
+        const imageUrl = finalImages[0] || '';
+
         /* Collect inventory */
         const inventoryMap = {};
         document.querySelectorAll('#inventoryGrid .inv-input').forEach(inp => {
@@ -347,6 +368,8 @@ window.saveProduct = async e => {
             inventory:     Object.keys(inventoryMap).length ? inventoryMap : null,
             order, available: avail,
             imageUrl:      imageUrl || '',
+            images:        finalImages.length ? finalImages : null,
+            barcode:       barcode || null,
             originalPrice: orig && orig > price ? orig : null,
             updatedAt:     serverTimestamp(),
         };
@@ -497,6 +520,8 @@ function listenOrders() {
         if (el) { el.textContent = pending; el.style.display = pending ? 'inline-block' : 'none'; }
         updateDashboard();
         renderOrders(allOrders);
+        buildCharts();
+        buildCustomerDatabase();
     });
 }
 
@@ -531,6 +556,7 @@ function renderOrders(orders) {
             <td>
                 <div class="row-actions">
                     <button class="btn-edit" onclick="editOrder('${o.id}')"><i class="fas fa-pen"></i> Edit</button>
+                    <button class="btn-invoice" onclick='generateGSTInvoice(${JSON.stringify(o).replace(/'/g,"&#39;")})'><i class="fas fa-file-invoice"></i></button>
                     <button class="btn-del"  onclick="confirmDeleteOrder('${o.id}')"><i class="fas fa-trash"></i></button>
                 </div>
             </td>
@@ -551,7 +577,8 @@ function renderOrders(orders) {
 
 window.filterOrders = () => {
     const status = document.getElementById('filterOrderStatus').value;
-    renderOrders(status ? allOrders.filter(o => o.status === status) : allOrders);
+    window._filteredOrders = status ? allOrders.filter(o => o.status === status) : null;
+    renderOrders(window._filteredOrders || allOrders);
 };
 
 window.openOrderForm = () => {
@@ -970,6 +997,7 @@ function renderInventory() {
 
     window._allVariants = all;
     renderInventoryTable(all);
+    checkLowStock();
 }
 
 function renderInventoryTable(rows) {
@@ -1219,30 +1247,26 @@ window.clearPosCart = () => {
     posCart = [];
     posAppliedCoupon = null;
     posCouponDisc    = 0;
+    posLoyaltyRedemption = 0;
     if (document.getElementById('posCustomerName'))  document.getElementById('posCustomerName').value  = '';
     if (document.getElementById('posCustomerPhone')) document.getElementById('posCustomerPhone').value = '';
     if (document.getElementById('posCouponInput'))   document.getElementById('posCouponInput').value   = '';
     if (document.getElementById('posCashTendered'))  document.getElementById('posCashTendered').value  = '';
     document.getElementById('posDiscountRow').style.display = 'none';
     document.getElementById('posChange').innerHTML = '';
+    const loyaltyInfo = document.getElementById('posLoyaltyInfo');
+    if (loyaltyInfo) loyaltyInfo.style.display = 'none';
+    const redeemBtn = document.getElementById('posRedeemBtn');
+    if (redeemBtn) redeemBtn.disabled = false;
+    const upiQr = document.getElementById('posUpiQr');
+    if (upiQr) upiQr.style.display = 'none';
+    const pointsEarn = document.getElementById('posPointsEarn');
+    if (pointsEarn) pointsEarn.style.display = 'none';
     renderPosCart();
 };
 
 function updatePosTotals() {
-    const sub  = posCart.reduce((s, i) => s + i.price * i.qty, 0);
-    const disc = posCouponDisc > 0 ? Math.round(sub * posCouponDisc / 100) : 0;
-    const total = sub - disc;
-    document.getElementById('posSubtotal').textContent  = `₹${sub.toLocaleString('en-IN')}`;
-    document.getElementById('posGrandTotal').textContent = `₹${total.toLocaleString('en-IN')}`;
-    const dr = document.getElementById('posDiscountRow');
-    if (disc > 0) {
-        document.getElementById('posDiscountLabel').textContent = `${posAppliedCoupon} (${posCouponDisc}% off)`;
-        document.getElementById('posDiscountAmt').textContent   = `-₹${disc.toLocaleString('en-IN')}`;
-        dr.style.display = 'flex';
-    } else {
-        dr.style.display = 'none';
-    }
-    calcPosChange();
+    updatePosTotalsWithLoyalty();
 }
 
 /* — Coupon — */
@@ -1275,7 +1299,8 @@ window.calcPosChange = () => {
     if (!el || posPayMethod !== 'Cash') { if(el) el.innerHTML=''; return; }
     const sub     = posCart.reduce((s, i) => s + i.price * i.qty, 0);
     const disc    = posCouponDisc > 0 ? Math.round(sub * posCouponDisc / 100) : 0;
-    const total   = sub - disc;
+    const loyalty = typeof posLoyaltyRedemption !== 'undefined' ? posLoyaltyRedemption : 0;
+    const total   = Math.max(0, sub - disc - loyalty);
     const tendered = Number(document.getElementById('posCashTendered')?.value) || 0;
     if (total === 0) { el.innerHTML = ''; return; }
     if (tendered >= total) {
@@ -1294,7 +1319,7 @@ window.completeSale = async () => {
     const phone = document.getElementById('posCustomerPhone')?.value.trim() || '';
     const sub   = posCart.reduce((s, i) => s + i.price * i.qty, 0);
     const disc  = posCouponDisc > 0 ? Math.round(sub * posCouponDisc / 100) : 0;
-    const total = sub - disc;
+    const total = Math.max(0, sub - disc - posLoyaltyRedemption);
     const orderId = `POS-${Date.now()}`;
 
     const sale = {
@@ -1332,6 +1357,9 @@ window.completeSale = async () => {
     } finally {
         btn.innerHTML = '<i class="fas fa-check-circle"></i> Complete Sale';
         btn.disabled  = false;
+        posLoyaltyRedemption = 0;
+        const redeemBtn = document.getElementById('posRedeemBtn');
+        if (redeemBtn) redeemBtn.disabled = false;
     }
 };
 
@@ -1446,3 +1474,800 @@ function watchOnlineStatus() {
     window.addEventListener('offline', update);
     update();
 }
+
+/* ============================================================
+   FEATURE 1: SALES CHARTS
+   ============================================================ */
+let revenueChartInst = null;
+let paymentChartInst = null;
+let topProductsChartInst = null;
+
+function buildCharts() {
+    try {
+        if (typeof Chart === 'undefined') return;
+
+        // Revenue last 30 days
+        const now = new Date();
+        const labels = [];
+        const revenueData = [];
+        for (let i = 29; i >= 0; i--) {
+            const d = new Date(now);
+            d.setDate(d.getDate() - i);
+            const key = d.toLocaleDateString('en-IN', { day:'2-digit', month:'short' });
+            labels.push(key);
+            const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+            const dayEnd   = new Date(dayStart); dayEnd.setDate(dayEnd.getDate() + 1);
+            const total = allOrders
+                .filter(o => {
+                    const t = o.createdAt?.toDate ? o.createdAt.toDate() : (o.createdAt ? new Date(o.createdAt) : null);
+                    return t && t >= dayStart && t < dayEnd;
+                })
+                .reduce((s, o) => s + (Number(o.amount) || 0), 0);
+            revenueData.push(total);
+        }
+
+        const rCanvas = document.getElementById('revenueChart');
+        if (rCanvas) {
+            if (revenueChartInst) revenueChartInst.destroy();
+            revenueChartInst = new Chart(rCanvas, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{ label: 'Revenue (₹)', data: revenueData, borderColor: '#C9A84C', backgroundColor: 'rgba(201,168,76,.1)', fill: true, tension: 0.3 }]
+                },
+                options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+            });
+        }
+
+        // Payment methods
+        const payMap = { Cash: 0, UPI: 0, Card: 0 };
+        allOrders.forEach(o => { const m = o.payment || o.paymentMethod || 'Cash'; if (payMap[m] !== undefined) payMap[m]++; else payMap['Cash']++; });
+        const pCanvas = document.getElementById('paymentChart');
+        if (pCanvas) {
+            if (paymentChartInst) paymentChartInst.destroy();
+            paymentChartInst = new Chart(pCanvas, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(payMap),
+                    datasets: [{ data: Object.values(payMap), backgroundColor: ['#C9A84C','#3b82f6','#22c55e'] }]
+                },
+                options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+            });
+        }
+
+        // Top 5 products
+        const productCount = {};
+        allOrders.forEach(o => {
+            const name = o.product || '';
+            if (!name) return;
+            const parts = name.split(', ');
+            parts.forEach(p => { productCount[p] = (productCount[p] || 0) + 1; });
+        });
+        const sorted = Object.entries(productCount).sort((a,b) => b[1]-a[1]).slice(0, 5);
+        const tCanvas = document.getElementById('topProductsChart');
+        if (tCanvas) {
+            if (topProductsChartInst) topProductsChartInst.destroy();
+            topProductsChartInst = new Chart(tCanvas, {
+                type: 'bar',
+                data: {
+                    labels: sorted.map(e => e[0]),
+                    datasets: [{ label: 'Orders', data: sorted.map(e => e[1]), backgroundColor: '#C9A84C' }]
+                },
+                options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } }
+            });
+        }
+    } catch(err) { console.error('Chart error:', err); }
+}
+
+/* ============================================================
+   FEATURE 2: EXPORT ORDERS CSV
+   ============================================================ */
+window.exportOrdersCSV = () => {
+    const orders = window._filteredOrders || allOrders;
+    const headers = ['Date','Order ID','Customer','Phone','Product','Size','Colour','Qty','Amount','Payment','Status','Coupon','Notes','Source'];
+    const rows = orders.map(o => {
+        const date = o.createdAt?.toDate ? o.createdAt.toDate().toLocaleDateString('en-IN') : '';
+        return [
+            date, o.orderId || o.id, o.name || '', o.phone || '',
+            o.product || '', o.size || '', o.color || '',
+            o.qty || 1, o.amount || 0, o.payment || o.paymentMethod || '',
+            o.status || '', o.coupon || '', (o.notes || '').replace(/\n/g,' '), o.source || ''
+        ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(',');
+    });
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url;
+    a.download = `orders_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('CSV exported!', 'success');
+};
+
+/* ============================================================
+   FEATURE 3: CUSTOMER DATABASE
+   ============================================================ */
+let allCustomers = [];
+
+function buildCustomerDatabase() {
+    const map = {};
+    allOrders.forEach(o => {
+        const phone = (o.phone || '').replace(/\D/g,'');
+        if (!phone) return;
+        if (!map[phone]) {
+            map[phone] = { name: o.name || 'Unknown', phone, totalOrders: 0, totalSpent: 0, lastOrderDate: null };
+        }
+        map[phone].totalOrders++;
+        map[phone].totalSpent += Number(o.amount) || 0;
+        const d = o.createdAt?.toDate ? o.createdAt.toDate() : (o.createdAt ? new Date(o.createdAt) : null);
+        if (d && (!map[phone].lastOrderDate || d > map[phone].lastOrderDate)) {
+            map[phone].lastOrderDate = d;
+            map[phone].name = o.name || map[phone].name;
+        }
+    });
+    allCustomers = Object.values(map).map(c => ({
+        ...c,
+        points: Math.floor(c.totalSpent / 10)
+    })).sort((a,b) => b.totalSpent - a.totalSpent);
+    renderCustomers(allCustomers);
+}
+
+function renderCustomers(customers) {
+    const container = document.getElementById('customersList');
+    if (!container) return;
+    if (!customers.length) {
+        container.innerHTML = `<div class="empty-state"><i class="fas fa-users"></i><p>No customers yet. Orders will populate this list.</p></div>`;
+        return;
+    }
+    const rows = customers.map(c => `
+    <tr>
+        <td>
+            <div class="customer-avatar">${(c.name||'?').charAt(0).toUpperCase()}</div>
+        </td>
+        <td><div class="prod-name">${c.name}</div></td>
+        <td>${c.phone}</td>
+        <td>${c.totalOrders}</td>
+        <td>₹${c.totalSpent.toLocaleString('en-IN')}</td>
+        <td><span class="loyalty-badge"><i class="fas fa-star"></i> ${c.points} pts</span></td>
+        <td>${c.lastOrderDate ? c.lastOrderDate.toLocaleDateString('en-IN') : '—'}</td>
+        <td>
+            <a href="https://wa.me/91${c.phone}" target="_blank" class="btn-wa-reply" style="font-size:.75rem;padding:5px 10px;">
+                <i class="fab fa-whatsapp"></i> WhatsApp
+            </a>
+        </td>
+    </tr>`).join('');
+    container.innerHTML = `
+    <table class="products-table">
+        <thead><tr><th></th><th>Name</th><th>Phone</th><th>Orders</th><th>Spent</th><th>Points</th><th>Last Order</th><th>Action</th></tr></thead>
+        <tbody>${rows}</tbody>
+    </table>`;
+}
+
+window.filterCustomers = () => {
+    const q = (document.getElementById('customerSearch')?.value || '').toLowerCase();
+    renderCustomers(q ? allCustomers.filter(c =>
+        c.name.toLowerCase().includes(q) || c.phone.includes(q)
+    ) : allCustomers);
+};
+
+/* ============================================================
+   FEATURE 4: RETURNS & EXCHANGE
+   ============================================================ */
+let allReturns = [];
+
+function listenReturns() {
+    try {
+        const q = query(collection(db, 'returns'), orderBy('createdAt', 'desc'));
+        onSnapshot(q, snap => {
+            allReturns = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderReturns(allReturns);
+        });
+    } catch(err) { console.error('listenReturns:', err); }
+}
+
+function renderReturns(returns) {
+    const container = document.getElementById('returnsList');
+    if (!container) return;
+    if (!returns.length) {
+        container.innerHTML = `<div class="empty-state"><i class="fas fa-undo-alt"></i><p>No returns logged yet.</p></div>`;
+        return;
+    }
+    const statusClass = { Pending:'order-pending', Refunded:'order-delivered', Exchanged:'order-shipped', Rejected:'order-pending' };
+    const rows = returns.map(r => {
+        const date = r.createdAt?.toDate ? r.createdAt.toDate().toLocaleDateString('en-IN') : '—';
+        const sc = statusClass[r.status] || 'order-pending';
+        return `<tr>
+            <td><div class="prod-name">${r.name||'—'}</div><div class="prod-cat">${r.phone||''}</div></td>
+            <td>${r.product||'—'}</td>
+            <td>${r.reason||'—'}</td>
+            <td>${r.amount ? `₹${Number(r.amount).toLocaleString('en-IN')}` : '—'}</td>
+            <td><span class="order-status ${sc}">${r.status||'Pending'}</span></td>
+            <td>${date}</td>
+            <td>
+                <div class="row-actions">
+                    <button class="btn-del" onclick="confirmDeleteReturn('${r.id}')"><i class="fas fa-trash"></i></button>
+                </div>
+            </td>
+        </tr>`;
+    }).join('');
+    container.innerHTML = `<table class="products-table"><thead><tr><th>Customer</th><th>Product</th><th>Reason</th><th>Amount</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+window.openReturnForm = () => {
+    document.getElementById('returnForm')?.reset();
+    document.getElementById('editReturnId').value = '';
+    document.getElementById('returnFormTitle').textContent = 'Log Return';
+    // populate product select
+    const sel = document.getElementById('rProduct');
+    if (sel) sel.innerHTML = '<option value="">— Select —</option>' + allProducts.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+    showSection('returnForm');
+};
+
+window.saveReturn = async e => {
+    e.preventDefault();
+    const btn = document.getElementById('saveReturnBtn');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…';
+    btn.disabled = true;
+    const restock = document.getElementById('rRestock').checked;
+    const productName = document.getElementById('rProduct').value;
+    const size = document.getElementById('rSize').value.trim();
+    const color = document.getElementById('rColor').value.trim();
+    const data = {
+        name: document.getElementById('rName').value.trim(),
+        phone: document.getElementById('rPhone').value.trim(),
+        orderRef: document.getElementById('rOrderRef').value.trim(),
+        product: productName,
+        size, color,
+        reason: document.getElementById('rReason').value,
+        amount: Number(document.getElementById('rAmount').value) || 0,
+        status: document.getElementById('rStatus').value,
+        restock,
+        notes: document.getElementById('rNotes').value.trim(),
+        updatedAt: serverTimestamp(),
+    };
+    try {
+        await addDoc(collection(db, 'returns'), { ...data, createdAt: serverTimestamp() });
+        if (restock && productName) {
+            const p = allProducts.find(x => x.name === productName);
+            if (p && p.inventory) {
+                const k = invKey(size || 'Free Size', color || '');
+                const cur = p.inventory[k] ?? 0;
+                await updateDoc(doc(db, 'products', p.id), { [`inventory.${k}`]: cur + 1 });
+            }
+        }
+        toast('Return logged!', 'success');
+        showSection('returns');
+    } catch(err) {
+        console.error(err);
+        toast('Error saving return', 'error');
+    } finally {
+        btn.innerHTML = '<i class="fas fa-save"></i> Save Return';
+        btn.disabled = false;
+    }
+};
+
+window.filterReturns = () => {
+    const status = document.getElementById('filterReturnStatus')?.value || '';
+    renderReturns(status ? allReturns.filter(r => r.status === status) : allReturns);
+};
+
+window.confirmDeleteReturn = id => {
+    const modal = document.getElementById('deleteModal');
+    modal.querySelector('h3').textContent = 'Delete Return?';
+    modal.querySelector('p').textContent = 'This return record will be permanently deleted.';
+    document.getElementById('confirmDeleteBtn').onclick = async () => {
+        try { await deleteDoc(doc(db, 'returns', id)); toast('Return deleted', 'success'); } catch(e) { toast('Error', 'error'); }
+        closeDeleteModal();
+    };
+    modal.style.display = 'flex';
+};
+
+/* ============================================================
+   FEATURE 5: GST INVOICE (jsPDF)
+   ============================================================ */
+window.generateGSTInvoice = (orderData) => {
+    try {
+        if (typeof window.jspdf === 'undefined' && typeof jsPDF === 'undefined') {
+            toast('PDF library loading, please try again', 'error'); return;
+        }
+        const { jsPDF } = window.jspdf || window;
+        const doc = new jsPDF();
+        const margin = 15;
+        let y = 20;
+
+        // Header
+        doc.setFontSize(18); doc.setFont('helvetica','bold');
+        doc.text('LaFashionPoint', margin, y); y += 8;
+        doc.setFontSize(9); doc.setFont('helvetica','normal');
+        doc.text('Village Khara Khera, Tehsil Tibbi, Hanumangarh, Rajasthan', margin, y); y += 5;
+        doc.text('WhatsApp: +91 9079661164  |  lafashionpoint.com', margin, y); y += 5;
+        doc.text('GSTIN: [TO BE ADDED BY OWNER]', margin, y); y += 10;
+
+        // Line
+        doc.setLineWidth(0.5); doc.line(margin, y, 195, y); y += 7;
+
+        // Invoice details
+        doc.setFontSize(14); doc.setFont('helvetica','bold');
+        doc.text('GST INVOICE', margin, y); y += 8;
+        doc.setFontSize(9); doc.setFont('helvetica','normal');
+        const invNo = orderData.orderId || orderData.id || `INV-${Date.now()}`;
+        const invDate = orderData.createdAt instanceof Date
+            ? orderData.createdAt.toLocaleDateString('en-IN')
+            : (orderData.createdAt?.toDate ? orderData.createdAt.toDate().toLocaleDateString('en-IN') : new Date().toLocaleDateString('en-IN'));
+        doc.text(`Invoice No: ${invNo}`, margin, y); y += 5;
+        doc.text(`Date: ${invDate}`, margin, y); y += 5;
+        doc.text(`Customer: ${orderData.name || 'Walk-in'}`, margin, y); y += 5;
+        doc.text(`Phone: ${orderData.phone || '—'}`, margin, y); y += 8;
+
+        // Items table header
+        doc.setLineWidth(0.3); doc.line(margin, y, 195, y); y += 5;
+        doc.setFont('helvetica','bold'); doc.setFontSize(8);
+        doc.text('Item', margin, y);
+        doc.text('HSN', 85, y);
+        doc.text('Qty', 105, y);
+        doc.text('Rate', 120, y);
+        doc.text('GST%', 140, y);
+        doc.text('GST Amt', 158, y);
+        doc.text('Total', 180, y); y += 4;
+        doc.line(margin, y, 195, y); y += 5;
+
+        // Items
+        doc.setFont('helvetica','normal');
+        const items = orderData.items || [{ name: orderData.product || 'Item', qty: orderData.qty || 1, price: orderData.amount || 0, size: orderData.size || '' }];
+        let subtotal = 0;
+        let totalGst = 0;
+        items.forEach(item => {
+            const rate = Number(item.price) || 0;
+            const qty  = Number(item.qty) || 1;
+            const lineAmt = rate * qty;
+            const gstPct = lineAmt > 999 ? 12 : 5;
+            const gstAmt = Math.round(lineAmt * gstPct / (100 + gstPct));
+            const baseAmt = lineAmt - gstAmt;
+            subtotal += baseAmt;
+            totalGst += gstAmt;
+            const nameStr = item.name + (item.size ? ` (${item.size})` : '');
+            doc.text(nameStr.substring(0, 28), margin, y);
+            doc.text('6101', 85, y);
+            doc.text(String(qty), 105, y);
+            doc.text(`${rate.toLocaleString('en-IN')}`, 120, y);
+            doc.text(`${gstPct}%`, 140, y);
+            doc.text(`${gstAmt.toLocaleString('en-IN')}`, 158, y);
+            doc.text(`${lineAmt.toLocaleString('en-IN')}`, 180, y);
+            y += 6;
+        });
+
+        doc.line(margin, y, 195, y); y += 5;
+
+        // Totals
+        const grandTotal = subtotal + totalGst;
+        doc.setFont('helvetica','normal');
+        doc.text(`Subtotal (excl. GST): INR ${subtotal.toLocaleString('en-IN')}`, 120, y); y += 5;
+        doc.text(`GST Amount: INR ${totalGst.toLocaleString('en-IN')}`, 120, y); y += 5;
+        doc.setFont('helvetica','bold');
+        doc.text(`Grand Total: INR ${grandTotal.toLocaleString('en-IN')}`, 120, y); y += 10;
+
+        // Footer
+        doc.setFont('helvetica','italic'); doc.setFontSize(9);
+        doc.text('Thank you for your business!', margin, y); y += 5;
+        doc.text('For queries: wa.me/919079661164', margin, y);
+
+        doc.save(`invoice_${invNo}.pdf`);
+        toast('Invoice PDF downloaded!', 'success');
+    } catch(err) {
+        console.error('Invoice error:', err);
+        toast('Error generating invoice: ' + err.message, 'error');
+    }
+};
+
+/* ============================================================
+   FEATURE 6: BARCODE SCANNER
+   ============================================================ */
+let barcodeReader = null;
+
+window.startBarcodeScanner = async () => {
+    const modal = document.getElementById('scannerModal');
+    if (!modal) return;
+    modal.style.display = 'flex';
+    const status = document.getElementById('scannerStatus');
+    if (status) status.textContent = 'Starting camera…';
+    try {
+        if (typeof ZXingBrowser === 'undefined' && typeof window.ZXing === 'undefined') {
+            if (status) status.textContent = 'ZXing library not loaded.';
+            return;
+        }
+        const ZXing = window.ZXingBrowser || window.ZXing;
+        barcodeReader = new ZXing.BrowserMultiFormatReader();
+        const preview = document.getElementById('scannerPreview');
+        if (preview) preview.innerHTML = '<video id="scannerVideo" style="width:100%;border-radius:8px;"></video>';
+        if (status) status.textContent = 'Scanning…';
+        await barcodeReader.decodeFromVideoDevice(null, 'scannerVideo', (result, err) => {
+            if (result) {
+                const code = result.getText();
+                stopBarcodeScanner();
+                const p = allProducts.find(x => x.barcode === code);
+                if (p) {
+                    openPosItem(p.id);
+                } else {
+                    toast(`Product not found — barcode: ${code}`, 'error');
+                }
+            }
+        });
+    } catch(err) {
+        console.error('Scanner error:', err);
+        if (status) status.textContent = 'Camera error: ' + err.message;
+    }
+};
+
+window.stopBarcodeScanner = () => {
+    try { if (barcodeReader) { barcodeReader.reset(); barcodeReader = null; } } catch(_) {}
+    const modal = document.getElementById('scannerModal');
+    if (modal) modal.style.display = 'none';
+    const preview = document.getElementById('scannerPreview');
+    if (preview) preview.innerHTML = '';
+};
+
+/* ============================================================
+   FEATURE 7: MULTIPLE PRODUCT IMAGES
+   ============================================================ */
+let pendingImages = [null, null, null, null, null];
+let activeSlot = 0;
+
+window.triggerImageUpload = (slotIndex) => {
+    activeSlot = slotIndex;
+    document.getElementById('multiImageInput')?.click();
+};
+
+window.handleMultiImageSelect = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast('Image must be under 5 MB', 'error'); return; }
+    pendingImages[activeSlot] = file;
+    const reader = new FileReader();
+    reader.onload = ev => updateSlotPreview(activeSlot, ev.target.result);
+    reader.readAsDataURL(file);
+    e.target.value = '';
+};
+
+function updateSlotPreview(idx, src) {
+    const slot = document.getElementById(`imgSlot${idx}`);
+    if (!slot) return;
+    slot.innerHTML = `<img src="${src}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">
+        <button type="button" class="slot-remove-btn" onclick="removeSlotImage(${idx},event)"><i class="fas fa-times"></i></button>`;
+}
+
+window.removeSlotImage = (idx, e) => {
+    e.stopPropagation();
+    pendingImages[idx] = null;
+    const slot = document.getElementById(`imgSlot${idx}`);
+    if (slot) {
+        slot.innerHTML = idx === 0
+            ? `<div class="img-slot-placeholder"><i class="fas fa-camera"></i><small>Main Photo</small></div>`
+            : `<div class="img-slot-placeholder"><i class="fas fa-plus"></i></div>`;
+    }
+};
+
+/* ============================================================
+   FEATURE 8: REVIEWS MODERATION
+   ============================================================ */
+let allReviews = [];
+
+function listenReviews() {
+    try {
+        const q = query(collection(db, 'reviews'), orderBy('createdAt', 'desc'));
+        onSnapshot(q, snap => {
+            allReviews = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            const pending = allReviews.filter(r => !r.approved).length;
+            const badge = document.getElementById('reviewsCount');
+            if (badge) { badge.textContent = pending; badge.style.display = pending ? 'inline-block' : 'none'; }
+            renderReviews(allReviews);
+        });
+    } catch(err) { console.error('listenReviews:', err); }
+}
+
+function renderReviews(reviews) {
+    const container = document.getElementById('reviewsList');
+    if (!container) return;
+    if (!reviews.length) {
+        container.innerHTML = `<div class="empty-state"><i class="fas fa-star"></i><p>No reviews yet.</p></div>`;
+        return;
+    }
+    container.innerHTML = reviews.map(r => {
+        const prod = allProducts.find(p => p.id === r.productId || p.name === r.product);
+        const stars = '★'.repeat(r.rating || 0) + '☆'.repeat(5 - (r.rating || 0));
+        const date = r.createdAt?.toDate ? r.createdAt.toDate().toLocaleDateString('en-IN') : '—';
+        return `
+        <div class="review-card ${r.approved ? 'approved' : 'pending-review'}">
+            <div class="review-header">
+                <span class="review-product">${prod?.name || r.product || 'Unknown Product'}</span>
+                <span class="review-stars">${stars}</span>
+                <span class="review-date">${date}</span>
+                ${r.approved ? '<span class="review-badge approved-badge">Approved</span>' : '<span class="review-badge pending-badge">Pending</span>'}
+            </div>
+            <div class="review-author">${r.customerName || r.name || 'Anonymous'}</div>
+            <div class="review-comment">${r.comment || r.review || ''}</div>
+            <div class="review-actions">
+                ${!r.approved ? `<button class="btn-edit" onclick="approveReview('${r.id}')"><i class="fas fa-check"></i> Approve</button>` : ''}
+                <button class="btn-del" onclick="rejectReview('${r.id}')"><i class="fas fa-trash"></i> ${r.approved ? 'Delete' : 'Reject'}</button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+window.filterReviews = () => {
+    const status = document.getElementById('filterReviewStatus')?.value || '';
+    if (!status) { renderReviews(allReviews); return; }
+    renderReviews(allReviews.filter(r => status === 'approved' ? r.approved : !r.approved));
+};
+
+window.approveReview = async id => {
+    try { await updateDoc(doc(db, 'reviews', id), { approved: true }); toast('Review approved!', 'success'); }
+    catch(err) { toast('Error approving review', 'error'); }
+};
+
+window.rejectReview = async id => {
+    try { await deleteDoc(doc(db, 'reviews', id)); toast('Review deleted', 'success'); }
+    catch(err) { toast('Error deleting review', 'error'); }
+};
+
+/* ============================================================
+   FEATURE 9: STAFF ROLE MANAGEMENT
+   ============================================================ */
+let staffRoleMap = {};
+
+async function loadStaffRoles() {
+    try {
+        const snap = await getDocs(collection(db, 'staff'));
+        staffRoleMap = {};
+        const staffList = [];
+        snap.forEach(d => {
+            const data = { id: d.id, ...d.data() };
+            staffRoleMap[data.email] = data.role || 'staff';
+            staffList.push(data);
+        });
+        renderStaffList(staffList);
+    } catch(err) { console.error('loadStaffRoles:', err); }
+}
+
+function renderStaffList(staffList) {
+    const container = document.getElementById('staffList');
+    if (!container) return;
+    if (!staffList.length) { container.innerHTML = '<p style="color:#9ca3af;font-size:.82rem;">No staff added yet.</p>'; return; }
+    container.innerHTML = staffList.map(s => `
+    <div class="staff-row">
+        <span><i class="fas fa-user"></i> ${s.email}</span>
+        <span class="staff-role">${s.role || 'staff'}</span>
+        <button class="btn-del" style="padding:4px 10px;font-size:.75rem;" onclick="removeStaff('${s.id}')"><i class="fas fa-times"></i></button>
+    </div>`).join('');
+}
+
+window.addStaff = async () => {
+    const email = document.getElementById('staffEmail')?.value.trim();
+    if (!email) { toast('Enter staff email', 'error'); return; }
+    try {
+        await addDoc(collection(db, 'staff'), { email, role: 'staff', addedAt: serverTimestamp() });
+        document.getElementById('staffEmail').value = '';
+        toast('Staff added!', 'success');
+        loadStaffRoles();
+    } catch(err) { toast('Error adding staff', 'error'); }
+};
+
+window.removeStaff = async id => {
+    try { await deleteDoc(doc(db, 'staff', id)); toast('Staff removed', 'success'); loadStaffRoles(); }
+    catch(err) { toast('Error removing staff', 'error'); }
+};
+
+/* ============================================================
+   FEATURE 10: LOYALTY POINTS IN POS
+   ============================================================ */
+let posLoyaltyRedemption = 0;
+
+window.checkPosLoyalty = () => {
+    const phone = (document.getElementById('posCustomerPhone')?.value || '').replace(/\D/g,'');
+    const loyaltyInfo = document.getElementById('posLoyaltyInfo');
+    const loyaltyPts  = document.getElementById('posLoyaltyPoints');
+    if (!phone || phone.length < 10) {
+        if (loyaltyInfo) loyaltyInfo.style.display = 'none';
+        return;
+    }
+    const customer = allCustomers.find(c => c.phone === phone || c.phone.endsWith(phone));
+    if (customer && customer.points > 0) {
+        if (loyaltyInfo)  loyaltyInfo.style.display = 'flex';
+        if (loyaltyPts)   loyaltyPts.textContent = `${customer.points} points (worth ₹${(customer.points * 0.1).toFixed(0)})`;
+    } else {
+        if (loyaltyInfo) loyaltyInfo.style.display = 'none';
+    }
+};
+
+window.redeemLoyaltyPoints = () => {
+    const phone = (document.getElementById('posCustomerPhone')?.value || '').replace(/\D/g,'');
+    const customer = allCustomers.find(c => c.phone === phone || c.phone.endsWith(phone));
+    if (!customer || !customer.points) { toast('No points to redeem', 'error'); return; }
+    const discount = Math.floor(customer.points * 0.1);
+    posLoyaltyRedemption = discount;
+    toast(`₹${discount} loyalty discount applied!`, 'success');
+    updatePosTotalsWithLoyalty();
+    document.getElementById('posRedeemBtn').disabled = true;
+};
+
+function updatePosTotalsWithLoyalty() {
+    const sub   = posCart.reduce((s, i) => s + i.price * i.qty, 0);
+    const disc  = posCouponDisc > 0 ? Math.round(sub * posCouponDisc / 100) : 0;
+    const total = Math.max(0, sub - disc - posLoyaltyRedemption);
+    document.getElementById('posSubtotal').textContent   = `₹${sub.toLocaleString('en-IN')}`;
+    document.getElementById('posGrandTotal').textContent = `₹${total.toLocaleString('en-IN')}`;
+    const dr = document.getElementById('posDiscountRow');
+    if (disc > 0 || posLoyaltyRedemption > 0) {
+        const label = [posAppliedCoupon ? `${posAppliedCoupon} (${posCouponDisc}% off)` : null, posLoyaltyRedemption > 0 ? `Loyalty -₹${posLoyaltyRedemption}` : null].filter(Boolean).join(' + ');
+        document.getElementById('posDiscountLabel').textContent = label;
+        document.getElementById('posDiscountAmt').textContent   = `-₹${(disc + posLoyaltyRedemption).toLocaleString('en-IN')}`;
+        dr.style.display = 'flex';
+    } else { dr.style.display = 'none'; }
+    // Points to earn
+    const earnEl = document.getElementById('posPointsEarn');
+    const earnTxt = document.getElementById('posPointsEarnText');
+    if (earnEl && earnTxt && total > 0) {
+        earnTxt.textContent = `You'll earn ${Math.floor(total / 10)} points on this purchase`;
+        earnEl.style.display = 'block';
+    } else if (earnEl) { earnEl.style.display = 'none'; }
+    calcPosChange();
+    // UPI QR
+    if (posPayMethod === 'UPI') showPosUpiQr(total);
+}
+
+/* ============================================================
+   FEATURE 11: UPI QR CODE
+   ============================================================ */
+let currentUpiId = '';
+
+function loadUpiSettings() {
+    currentUpiId = localStorage.getItem('lfp_upi_id') || '';
+    const el = document.getElementById('settingsUpiId');
+    if (el) el.value = currentUpiId;
+    if (currentUpiId) generateUpiQr('upiQrPreview', currentUpiId, 0);
+}
+
+window.saveUpiId = () => {
+    currentUpiId = document.getElementById('settingsUpiId')?.value.trim() || '';
+    localStorage.setItem('lfp_upi_id', currentUpiId);
+    if (currentUpiId) generateUpiQr('upiQrPreview', currentUpiId, 0);
+};
+
+function generateUpiQr(containerId, upiId, amount) {
+    try {
+        if (typeof QRCode === 'undefined') return;
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.innerHTML = '';
+        const upiUrl = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=LaFashionPoint${amount > 0 ? `&am=${amount}` : ''}&cu=INR`;
+        new QRCode(container, { text: upiUrl, width: 160, height: 160, correctLevel: QRCode.CorrectLevel.M });
+        const label = document.createElement('p');
+        label.style.cssText = 'font-size:.75rem;color:#666;margin-top:6px;';
+        label.textContent = upiId;
+        container.appendChild(label);
+    } catch(err) { console.error('QR error:', err); }
+}
+
+function showPosUpiQr(amount) {
+    const container = document.getElementById('posUpiQr');
+    if (!container) return;
+    if (!currentUpiId || !amount) { container.style.display = 'none'; return; }
+    container.style.display = 'block';
+    generateUpiQr('posUpiQr', currentUpiId, amount);
+}
+
+// Hook into setPosPayMethod to show/hide UPI QR
+const _origSetPosPayMethod = window.setPosPayMethod;
+window.setPosPayMethod = el => {
+    _origSetPosPayMethod(el);
+    const sub  = posCart.reduce((s, i) => s + i.price * i.qty, 0);
+    const disc = posCouponDisc > 0 ? Math.round(sub * posCouponDisc / 100) : 0;
+    const total = Math.max(0, sub - disc - posLoyaltyRedemption);
+    if (posPayMethod === 'UPI' && total > 0) {
+        showPosUpiQr(total);
+    } else {
+        const qr = document.getElementById('posUpiQr');
+        if (qr) qr.style.display = 'none';
+    }
+};
+
+/* ============================================================
+   FEATURE 12: LOW STOCK ALERTS
+   ============================================================ */
+function checkLowStock() {
+    try {
+        const variants = buildVariantList();
+        const low = variants.filter(v => v.stock > 0 && v.stock <= 3);
+        const alert = document.getElementById('lowStockAlert');
+        const list  = document.getElementById('lowStockList');
+        if (!alert || !list) return;
+        if (!low.length) { alert.style.display = 'none'; return; }
+        list.textContent = low.map(v => `${v.p.name} (${v.size}${v.color ? '/' + v.color : ''}): ${v.stock} left`).join(' · ');
+        alert.style.display = 'flex';
+    } catch(err) { console.error('checkLowStock:', err); }
+}
+
+window.whatsappLowStock = () => {
+    const variants = buildVariantList().filter(v => v.stock > 0 && v.stock <= 3);
+    const msg = `*LaFashionPoint — Low Stock Alert*\n\nThe following items are running low:\n\n${
+        variants.map(v => `• ${v.p.name} (${v.size}${v.color ? '/' + v.color : ''}): ${v.stock} units left`).join('\n')
+    }\n\nPlease reorder soon!`;
+    window.open(`https://wa.me/919079661164?text=${encodeURIComponent(msg)}`, '_blank', 'noopener');
+};
+
+/* ============================================================
+   FEATURE 13: END-OF-DAY POS SUMMARY
+   ============================================================ */
+window.showEODSummary = () => {
+    const modal = document.getElementById('eodModal');
+    if (!modal) return;
+    const today = new Date();
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const todayEnd   = new Date(todayStart); todayEnd.setDate(todayEnd.getDate() + 1);
+
+    const todayOrders = allOrders.filter(o => {
+        if (o.source !== 'pos') return false;
+        const t = o.createdAt?.toDate ? o.createdAt.toDate() : (o.createdAt ? new Date(o.createdAt) : null);
+        return t && t >= todayStart && t < todayEnd;
+    });
+
+    document.getElementById('eodDate').textContent = `Date: ${today.toLocaleDateString('en-IN', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}`;
+
+    if (!todayOrders.length) {
+        document.getElementById('eodContent').innerHTML = '<p style="color:#9ca3af;text-align:center;padding:20px;">No POS sales today.</p>';
+        modal.style.display = 'flex';
+        return;
+    }
+
+    const totalRev  = todayOrders.reduce((s, o) => s + (Number(o.amount) || 0), 0);
+    const avgOrder  = Math.round(totalRev / todayOrders.length);
+    const payBreak  = {};
+    todayOrders.forEach(o => {
+        const m = o.payment || 'Cash';
+        payBreak[m] = (payBreak[m] || 0) + (Number(o.amount) || 0);
+    });
+    const itemCount = {};
+    todayOrders.forEach(o => {
+        (o.items || [{ name: o.product }]).forEach(i => {
+            if (i.name) itemCount[i.name] = (itemCount[i.name] || 0) + (i.qty || 1);
+        });
+    });
+    const topItems = Object.entries(itemCount).sort((a,b) => b[1]-a[1]).slice(0, 5);
+
+    document.getElementById('eodContent').innerHTML = `
+    <div class="eod-stats">
+        <div class="eod-stat"><strong>${todayOrders.length}</strong><small>Transactions</small></div>
+        <div class="eod-stat"><strong>₹${totalRev.toLocaleString('en-IN')}</strong><small>Total Revenue</small></div>
+        <div class="eod-stat"><strong>₹${avgOrder.toLocaleString('en-IN')}</strong><small>Avg Order Value</small></div>
+    </div>
+    <h4 style="margin:12px 0 6px;font-size:.82rem;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;">By Payment Method</h4>
+    ${Object.entries(payBreak).map(([m, amt]) => `<div class="eod-row"><span>${m}</span><span>₹${amt.toLocaleString('en-IN')}</span></div>`).join('')}
+    <h4 style="margin:12px 0 6px;font-size:.82rem;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;">Top Items Sold</h4>
+    ${topItems.map(([name, qty]) => `<div class="eod-row"><span>${name}</span><span>${qty} units</span></div>`).join('')}`;
+
+    modal.style.display = 'flex';
+};
+
+window.printEOD = () => {
+    const content = document.getElementById('eodContent')?.innerHTML || '';
+    const date = document.getElementById('eodDate')?.textContent || '';
+    const win = window.open('', '_blank', 'width=400,height=600');
+    win.document.write(`<!DOCTYPE html><html><head><title>EOD Summary</title>
+    <style>body{font-family:sans-serif;max-width:360px;margin:auto;padding:16px;font-size:13px}
+    h3{text-align:center}h4{margin:10px 0 4px;color:#666;font-size:.8rem;text-transform:uppercase}
+    .eod-stats{display:flex;gap:10px;margin:10px 0}
+    .eod-stat{flex:1;text-align:center;padding:10px;border:1px solid #eee;border-radius:6px}
+    .eod-stat strong{display:block;font-size:1.1rem}
+    .eod-stat small{color:#666;font-size:.75rem}
+    .eod-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #f0f0f0}
+    </style></head><body>
+    <h3>End of Day Summary</h3><p style="text-align:center;color:#666;font-size:.82rem;">${date}</p>
+    ${content}</body></html>`);
+    win.document.close();
+    setTimeout(() => win.print(), 300);
+};
+
+/* ============================================================
+   FEATURE 14: ENHANCED WHATSAPP INQUIRIES
+   (renderInquiries already handles WhatsApp - enhancement is in the template)
+   ============================================================ */

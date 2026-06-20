@@ -11,6 +11,15 @@
     <meta property="og:type" content="website">
     <meta property="og:image" content="logo.png">
 
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#C9A84C">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="LaFashionPoint">
+
+    <!-- Razorpay -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -32,8 +41,15 @@
                 <li><a href="#products" class="nav-link">Products</a></li>
                 <li><a href="#offers"   class="nav-link">Offers</a></li>
                 <li><a href="#about"    class="nav-link">About</a></li>
+                <li><a href="#track"    class="nav-link">Track</a></li>
+                <li><a href="#faq"      class="nav-link">FAQ</a></li>
                 <li><a href="#contact"  class="nav-link">Contact</a></li>
             </ul>
+            <!-- Wishlist button in nav -->
+            <button class="nav-wishlist" onclick="openWishlist()" title="Wishlist">
+                <i class="far fa-heart"></i>
+                <span class="wishlist-count" id="wishlistCount" style="display:none;"></span>
+            </button>
             <a href="https://wa.me/919079661164" target="_blank" rel="noopener" class="btn btn-wa nav-cta">
                 <i class="fab fa-whatsapp"></i> Order Now
             </a>
@@ -80,6 +96,13 @@
                 <p class="tag">Our Collection</p>
                 <h2>Men's Fashion</h2>
                 <p class="section-desc">Premium clothing for every occasion — all colours available</p>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="site-search-bar">
+                <i class="fas fa-search"></i>
+                <input type="text" id="siteSearch" placeholder="Search T-shirts, Hoodies, Jeans…" oninput="handleSearch()">
+                <button id="searchClear" onclick="clearSearch()" style="display:none;"><i class="fas fa-times"></i></button>
             </div>
 
             <!-- Filter Bar -->
@@ -216,6 +239,151 @@
         </div>
     </section>
 
+    <!-- ===== INSTAGRAM ===== -->
+    <section class="section instagram-section">
+        <div class="container">
+            <div class="section-header">
+                <p class="tag">Follow Us</p>
+                <h2>@LaFashionPoint on Instagram</h2>
+                <p class="section-desc">Tag us in your photos for a chance to be featured</p>
+            </div>
+            <div class="instagram-grid">
+                <a href="https://instagram.com/lafashionpoint" target="_blank" rel="noopener" class="ig-cell" style="background:linear-gradient(135deg,#C9A84C,#1a1205);">
+                    <i class="fas fa-camera"></i>
+                </a>
+                <a href="https://instagram.com/lafashionpoint" target="_blank" rel="noopener" class="ig-cell" style="background:linear-gradient(135deg,#1a1a2e,#C9A84C);">
+                    <i class="fas fa-camera"></i>
+                </a>
+                <a href="https://instagram.com/lafashionpoint" target="_blank" rel="noopener" class="ig-cell" style="background:linear-gradient(135deg,#9a7520,#0e0e0e);">
+                    <i class="fas fa-camera"></i>
+                </a>
+                <a href="https://instagram.com/lafashionpoint" target="_blank" rel="noopener" class="ig-cell" style="background:linear-gradient(135deg,#0e0e0e,#e8c06e);">
+                    <i class="fas fa-camera"></i>
+                </a>
+                <a href="https://instagram.com/lafashionpoint" target="_blank" rel="noopener" class="ig-cell" style="background:linear-gradient(135deg,#e8c06e,#1f1f1f);">
+                    <i class="fas fa-camera"></i>
+                </a>
+                <a href="https://instagram.com/lafashionpoint" target="_blank" rel="noopener" class="ig-cell" style="background:linear-gradient(135deg,#1f1f1f,#C9A84C);">
+                    <i class="fas fa-camera"></i>
+                </a>
+            </div>
+            <div style="text-align:center;margin-top:28px;">
+                <a href="https://instagram.com/lafashionpoint" target="_blank" rel="noopener" class="btn btn-gold">
+                    <i class="fab fa-instagram"></i> Follow on Instagram
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== TESTIMONIALS ===== -->
+    <section class="section testimonials-section">
+        <div class="container">
+            <div class="section-header">
+                <p class="tag">Happy Customers</p>
+                <h2>What Our Customers Say</h2>
+            </div>
+            <div class="testimonials-carousel">
+                <button class="test-arrow prev" onclick="prevTestimonial()"><i class="fas fa-chevron-left"></i></button>
+                <div class="testimonials-track" id="testimonialsTrack"></div>
+                <button class="test-arrow next" onclick="nextTestimonial()"><i class="fas fa-chevron-right"></i></button>
+            </div>
+            <div class="test-dots" id="testDots"></div>
+        </div>
+    </section>
+
+    <!-- ===== FAQ ===== -->
+    <section id="faq" class="section faq-section">
+        <div class="container">
+            <div class="section-header">
+                <p class="tag">Got Questions?</p>
+                <h2>Frequently Asked Questions</h2>
+            </div>
+            <div class="faq-list">
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        <span>What sizes are available?</span>
+                        <i class="fas fa-chevron-down faq-chevron"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <p>We stock S, M, L, XL, XXL and 3XL for most items. Jeans available in waist sizes 28-38. Check the Size Guide in each product for measurements.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        <span>Do you deliver across India?</span>
+                        <i class="fas fa-chevron-down faq-chevron"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Yes! We ship to every corner of India. Delivery takes 3-7 business days depending on your location.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        <span>How do I place an order?</span>
+                        <i class="fas fa-chevron-down faq-chevron"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Simply tap the WhatsApp button on any product, mention your size and colour, and we'll confirm your order within minutes.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        <span>What payment methods do you accept?</span>
+                        <i class="fas fa-chevron-down faq-chevron"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <p>We accept Cash on Delivery, UPI (GPay, PhonePe, Paytm), Razorpay, and Debit/Credit Cards.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        <span>Can I return or exchange?</span>
+                        <i class="fas fa-chevron-down faq-chevron"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Yes, we accept returns/exchanges within 7 days. The product must be unused with tags intact. WhatsApp us to initiate.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        <span>How do I use a discount coupon?</span>
+                        <i class="fas fa-chevron-down faq-chevron"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Share the coupon code on WhatsApp when placing your order and the discount will be applied.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        <span>Are the colours true to the photos?</span>
+                        <i class="fas fa-chevron-down faq-chevron"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <p>We try our best to show accurate colours. Minor variations may occur due to screen settings.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        <span>How do I track my order?</span>
+                        <i class="fas fa-chevron-down faq-chevron"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Use our Order Tracker above — just enter your phone number to see your order status.</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
     <!-- ===== CONTACT ===== -->
     <section id="contact" class="section contact-section">
         <div class="container">
@@ -297,6 +465,26 @@
         </div>
     </section>
 
+    <!-- ===== ORDER TRACKING ===== -->
+    <section id="track" class="section track-section">
+        <div class="container">
+            <div class="section-header">
+                <p class="tag">Your Orders</p>
+                <h2>Track Your Order</h2>
+                <p class="section-desc">Enter your phone number to see your order status</p>
+            </div>
+            <div class="track-form">
+                <div class="track-input-row">
+                    <input type="tel" id="trackPhone" placeholder="+91 98765 43210" maxlength="15">
+                    <button class="btn btn-gold" onclick="trackOrder()">
+                        <i class="fas fa-search"></i> Track
+                    </button>
+                </div>
+                <div id="trackResults" class="track-results" style="display:none;"></div>
+            </div>
+        </div>
+    </section>
+
     <!-- ===== GOOGLE MAP ===== -->
     <section class="map-section">
         <div class="container">
@@ -338,6 +526,7 @@
                     <p>Your trusted destination for premium men's fashion. Quality clothing delivered to your doorstep, anywhere in India.</p>
                     <div class="footer-social">
                         <a href="https://wa.me/919079661164" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+                        <a href="https://instagram.com/lafashionpoint" target="_blank" rel="noopener" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
                     </div>
                 </div>
 
@@ -348,6 +537,8 @@
                         <li><a href="#products">Products</a></li>
                         <li><a href="#offers">Offers</a></li>
                         <li><a href="#about">About Us</a></li>
+                        <li><a href="#track">Track Order</a></li>
+                        <li><a href="#faq">FAQ</a></li>
                         <li><a href="#contact">Contact</a></li>
                     </ul>
                 </div>
@@ -404,7 +595,13 @@
                 <div class="pd-img-placeholder" id="pdImgPlaceholder" style="display:flex;">
                     <i class="fas fa-tshirt"></i>
                 </div>
-                <img id="pdImg" src="" alt="" style="display:none;">
+                <!-- Carousel container -->
+                <div class="pd-carousel" id="pdCarousel" style="display:none;">
+                    <button class="pd-car-arrow left" onclick="changeModalImage(currentCarouselIdx - 1)"><i class="fas fa-chevron-left"></i></button>
+                    <img id="pdImg" src="" alt="" class="pd-car-main">
+                    <button class="pd-car-arrow right" onclick="changeModalImage(currentCarouselIdx + 1)"><i class="fas fa-chevron-right"></i></button>
+                    <div class="pd-car-thumbs" id="pdCarThumbs"></div>
+                </div>
                 <span class="pd-badge" id="pdBadge" style="display:none;"></span>
             </div>
 
@@ -447,8 +644,61 @@
                 <button class="pd-order-btn" onclick="pdOrderNow()">
                     <i class="fab fa-whatsapp"></i> Order on WhatsApp
                 </button>
-                <p class="pd-hint">Your size &amp; colour will be included in the message</p>
+
+                <!-- Buy Now (Razorpay) -->
+                <button class="pd-buy-btn" onclick="buyNow()">
+                    <i class="fas fa-bolt"></i> Buy Now — Pay Online
+                </button>
+                <p class="pd-hint">Secure payment via Razorpay · UPI · Cards</p>
+
+                <p class="pd-hint">Your size &amp; colour will be included in the WhatsApp message</p>
+
+                <!-- Related Products -->
+                <div class="pd-related" id="pdRelated" style="display:none;">
+                    <h4 class="pd-related-title">You May Also Like</h4>
+                    <div class="pd-related-grid" id="pdRelatedGrid"></div>
+                </div>
+
+                <!-- Reviews Section -->
+                <div class="pd-reviews-section">
+                    <div class="pd-reviews-header">
+                        <h4>Customer Reviews</h4>
+                        <div class="pd-avg-rating" id="pdAvgRating"></div>
+                    </div>
+                    <div id="pdReviewsList"></div>
+                    <div class="pd-review-form">
+                        <h5>Write a Review</h5>
+                        <div class="star-input" id="starInput"></div>
+                        <input type="text" id="reviewName" placeholder="Your name">
+                        <textarea id="reviewComment" placeholder="Share your experience…" rows="3"></textarea>
+                        <button onclick="submitReview()" class="btn btn-gold btn-sm">Submit Review</button>
+                        <p class="review-thanks" id="reviewThanks" style="display:none;">Thank you! Your review is pending approval.</p>
+                    </div>
+                </div>
             </div>
+        </div>
+    </div>
+
+    <!-- ===== WISHLIST MODAL ===== -->
+    <div id="wishlistOverlay" class="wishlist-overlay" style="display:none;" onclick="if(event.target===this)closeWishlist()">
+        <div class="wishlist-box">
+            <div class="wishlist-header">
+                <h3><i class="fas fa-heart"></i> My Wishlist</h3>
+                <button class="wishlist-close" onclick="closeWishlist()"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="wishlistContent" class="wishlist-content"></div>
+        </div>
+    </div>
+
+    <!-- ===== COOKIE CONSENT BANNER ===== -->
+    <div id="cookieBanner" class="cookie-banner" style="display:none;">
+        <div class="cookie-content">
+            <i class="fas fa-cookie-bite"></i>
+            <p>We use cookies to improve your experience. By continuing to use this site, you agree to our use of cookies.</p>
+        </div>
+        <div class="cookie-actions">
+            <button class="btn-cookie-accept" onclick="acceptCookies()">Accept</button>
+            <button class="btn-cookie-decline" onclick="declineCookies()">Decline</button>
         </div>
     </div>
 

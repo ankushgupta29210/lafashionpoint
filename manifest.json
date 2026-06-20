@@ -1,0 +1,13 @@
+{
+  "name": "LaFashionPoint",
+  "short_name": "LaFashion",
+  "description": "Premium Men's Fashion Store",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0e0e0e",
+  "theme_color": "#C9A84C",
+  "icons": [
+    { "src": "logo.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "logo.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
