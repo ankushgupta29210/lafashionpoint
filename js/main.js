@@ -1,6 +1,6 @@
 import { db } from './firebase-config.js';
 import {
-    collection, onSnapshot, query, where, orderBy,
+    collection, onSnapshot, query, orderBy,
     addDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
@@ -107,12 +107,12 @@ const grid    = document.getElementById('productsGrid');
 const loading = document.getElementById('productsLoading');
 const empty   = document.getElementById('productsEmpty');
 
-const q = query(collection(db, 'products'), where('available', '==', true), orderBy('order', 'asc'));
+const q = query(collection(db, 'products'), orderBy('order', 'asc'));
 
 onSnapshot(q, snap => {
     loading.style.display = 'none';
     if (snap.empty) { empty.style.display = 'block'; grid.style.display = 'none'; return; }
-    allProducts   = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    allProducts   = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(p => p.available !== false);
     productsCache = {};
     allProducts.forEach(p => { productsCache[p.id] = p; });
     renderProducts();
@@ -346,9 +346,12 @@ function renderCoupons(coupons) {
 }
 
 onSnapshot(
-    query(collection(db, 'coupons'), where('active', '==', true), orderBy('createdAt', 'asc')),
-    snap => { renderCoupons(snap.empty ? DEFAULT_COUPONS : snap.docs.map(d => d.data())); },
-    ()   => { renderCoupons(DEFAULT_COUPONS); }
+    query(collection(db, 'coupons'), orderBy('createdAt', 'asc')),
+    snap => {
+        const active = snap.docs.map(d => d.data()).filter(c => c.active !== false);
+        renderCoupons(active.length ? active : DEFAULT_COUPONS);
+    },
+    () => { renderCoupons(DEFAULT_COUPONS); }
 );
 
 /* ============================================================
