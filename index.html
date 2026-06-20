@@ -82,6 +82,22 @@
                 <p class="section-desc">Premium clothing for every occasion — all colours available</p>
             </div>
 
+            <!-- Filter Bar -->
+            <div class="products-filter-bar">
+                <div class="cat-tabs">
+                    <button class="cat-tab active" data-cat="">All</button>
+                    <button class="cat-tab" data-cat="T-Shirt">T-Shirts</button>
+                    <button class="cat-tab" data-cat="Shirt">Shirts</button>
+                    <button class="cat-tab" data-cat="Hoodie">Hoodies</button>
+                    <button class="cat-tab" data-cat="Jeans">Jeans</button>
+                </div>
+                <select class="sort-select" id="sortSelect">
+                    <option value="">Sort: Default</option>
+                    <option value="low">Price: Low to High</option>
+                    <option value="high">Price: High to Low</option>
+                </select>
+            </div>
+
             <!-- Loading state -->
             <div id="productsLoading" class="products-loading">
                 <div class="spinner"></div>
@@ -110,57 +126,8 @@
                 <h2>Exclusive Discount Coupons</h2>
                 <p class="section-desc">Share these codes when ordering to get amazing savings</p>
             </div>
-            <div class="coupons-grid">
-
-                <div class="coupon">
-                    <div class="coupon-left">
-                        <span class="pct">10%</span>
-                        <span class="off">OFF</span>
-                    </div>
-                    <div class="coupon-divider"></div>
-                    <div class="coupon-right">
-                        <h4>First Order Deal</h4>
-                        <p>For all new customers</p>
-                        <div class="coupon-code-box">
-                            <span>FIRST10</span>
-                            <button onclick="copyCoupon('FIRST10')" aria-label="Copy coupon"><i class="far fa-copy"></i></button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="coupon featured">
-                    <div class="coupon-left">
-                        <span class="pct">20%</span>
-                        <span class="off">OFF</span>
-                    </div>
-                    <div class="coupon-divider"></div>
-                    <div class="coupon-right">
-                        <h4>WhatsApp Order</h4>
-                        <p>Order via WhatsApp to claim</p>
-                        <div class="coupon-code-box">
-                            <span>WA20</span>
-                            <button onclick="copyCoupon('WA20')" aria-label="Copy coupon"><i class="far fa-copy"></i></button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="coupon">
-                    <div class="coupon-left">
-                        <span class="pct">15%</span>
-                        <span class="off">OFF</span>
-                    </div>
-                    <div class="coupon-divider"></div>
-                    <div class="coupon-right">
-                        <h4>Festive Sale</h4>
-                        <p>On orders above ₹999</p>
-                        <div class="coupon-code-box">
-                            <span>FEST15</span>
-                            <button onclick="copyCoupon('FEST15')" aria-label="Copy coupon"><i class="far fa-copy"></i></button>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
+            <!-- Coupons filled by JS from Firestore (fallback to defaults) -->
+            <div class="coupons-grid" id="couponsGrid"></div>
         </div>
     </section>
 
@@ -398,7 +365,7 @@
                 <div class="footer-col">
                     <h4>Contact</h4>
                     <ul class="footer-contact">
-                        <li><i class="fas fa-phone"></i> +91 919079661164</li>
+                        <li><i class="fas fa-phone"></i> +91 9079661164</li>
                         <li><i class="fab fa-whatsapp"></i> WhatsApp orders 24/7</li>
                         <li><i class="fas fa-map-marker-alt"></i> Hanumangarh, Rajasthan</li>
                         <li><i class="fas fa-truck"></i> Ships across India</li>
@@ -424,6 +391,66 @@
     </button>
 
     <div id="toast" class="toast" role="alert" aria-live="polite"></div>
+
+    <!-- ===== PRODUCT DETAIL MODAL ===== -->
+    <div id="pdOverlay" class="pd-overlay" onclick="if(event.target===this)closeProductModal()">
+        <div class="pd-box">
+            <button class="pd-close" onclick="closeProductModal()" aria-label="Close">
+                <i class="fas fa-times"></i>
+            </button>
+
+            <!-- Image column -->
+            <div class="pd-image-col" id="pdImageCol">
+                <div class="pd-img-placeholder" id="pdImgPlaceholder" style="display:flex;">
+                    <i class="fas fa-tshirt"></i>
+                </div>
+                <img id="pdImg" src="" alt="" style="display:none;">
+                <span class="pd-badge" id="pdBadge" style="display:none;"></span>
+            </div>
+
+            <!-- Details column -->
+            <div class="pd-details-col">
+                <div class="pd-category" id="pdCategory"></div>
+                <h2 class="pd-name" id="pdName"></h2>
+
+                <div class="pd-price-row">
+                    <span class="pd-price" id="pdPrice"></span>
+                    <span class="pd-price-original" id="pdPriceOrig" style="display:none;"></span>
+                    <span class="pd-discount" id="pdDiscount" style="display:none;"></span>
+                </div>
+
+                <!-- Tabs: Details / Size Guide -->
+                <div class="pd-tabs">
+                    <button class="pd-tab active" data-tab="details" onclick="switchPdTab('details',this)">Details</button>
+                    <button class="pd-tab" data-tab="sizeguide" onclick="switchPdTab('sizeguide',this)">Size Guide</button>
+                </div>
+                <div id="pdTabDetails" class="pd-tab-content active">
+                    <p class="pd-desc" id="pdDesc"></p>
+                    <p class="pd-fabric" id="pdFabric" style="display:none;"></p>
+                </div>
+                <div id="pdTabSizeguide" class="pd-tab-content">
+                    <table class="size-guide-table" id="pdSizeTable"></table>
+                </div>
+
+                <!-- Size selector -->
+                <div>
+                    <p class="pd-section-label">Select Size *</p>
+                    <div class="pd-sizes" id="pdSizeBtns"></div>
+                </div>
+
+                <!-- Colour selector -->
+                <div>
+                    <p class="pd-section-label">Select Colour *</p>
+                    <div class="pd-colors" id="pdColorBtns"></div>
+                </div>
+
+                <button class="pd-order-btn" onclick="pdOrderNow()">
+                    <i class="fab fa-whatsapp"></i> Order on WhatsApp
+                </button>
+                <p class="pd-hint">Your size &amp; colour will be included in the message</p>
+            </div>
+        </div>
+    </div>
 
     <script type="module" src="js/main.js"></script>
 </body>

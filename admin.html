@@ -49,12 +49,22 @@
             <button class="sidebar-close" onclick="closeSidebar()"><i class="fas fa-times"></i></button>
         </div>
         <nav class="sidebar-nav">
+            <a href="#" class="nav-item" data-section="dashboard" onclick="showSection('dashboard')">
+                <i class="fas fa-chart-bar"></i> Dashboard
+            </a>
             <a href="#" class="nav-item active" data-section="products" onclick="showSection('products')">
                 <i class="fas fa-box"></i> Products
             </a>
             <a href="#" class="nav-item" data-section="inquiries" onclick="showSection('inquiries')">
                 <i class="fas fa-envelope"></i> Inquiries
                 <span class="badge-count" id="inquiryCount" style="display:none;">0</span>
+            </a>
+            <a href="#" class="nav-item" data-section="orders" onclick="showSection('orders')">
+                <i class="fas fa-shopping-bag"></i> Orders
+                <span class="badge-count" id="ordersCount" style="display:none;">0</span>
+            </a>
+            <a href="#" class="nav-item" data-section="coupons" onclick="showSection('coupons')">
+                <i class="fas fa-tag"></i> Coupons
             </a>
             <a href="#" class="nav-item" data-section="settings" onclick="showSection('settings')">
                 <i class="fas fa-cog"></i> Settings
@@ -179,6 +189,37 @@
                         </div>
 
                         <div class="field">
+                            <label>Fabric / Material</label>
+                            <input type="text" id="pFabric" placeholder="e.g. 100% Cotton, Poly-Cotton blend">
+                        </div>
+
+                        <div class="field">
+                            <label>Available Sizes</label>
+                            <div class="sizes-toggle" id="sizesToggle">
+                                <button type="button" class="size-chip" data-size="S">S</button>
+                                <button type="button" class="size-chip" data-size="M">M</button>
+                                <button type="button" class="size-chip" data-size="L">L</button>
+                                <button type="button" class="size-chip" data-size="XL">XL</button>
+                                <button type="button" class="size-chip" data-size="XXL">XXL</button>
+                                <button type="button" class="size-chip" data-size="3XL">3XL</button>
+                                <button type="button" class="size-chip" data-size="Free Size">Free</button>
+                                <button type="button" class="size-chip" data-size="28">28</button>
+                                <button type="button" class="size-chip" data-size="30">30</button>
+                                <button type="button" class="size-chip" data-size="32">32</button>
+                                <button type="button" class="size-chip" data-size="34">34</button>
+                                <button type="button" class="size-chip" data-size="36">36</button>
+                                <button type="button" class="size-chip" data-size="38">38</button>
+                            </div>
+                            <small class="field-hint">Click to toggle · Leave blank to show default sizes for the category on site</small>
+                        </div>
+
+                        <div class="field">
+                            <label>Available Colours</label>
+                            <input type="text" id="pColors" placeholder="e.g. Red, Blue, Black, White, Grey">
+                            <small class="field-hint">Comma-separated · Exact names shown as colour dots on site</small>
+                        </div>
+
+                        <div class="field">
                             <label>Display Order</label>
                             <input type="number" id="pOrder" placeholder="1" min="1" step="1" value="99">
                             <small class="field-hint">Lower number = appears first on site</small>
@@ -205,6 +246,199 @@
                         </div>
 
                     </div>
+                </div>
+            </form>
+        </section>
+
+        <!-- ── DASHBOARD SECTION ── -->
+        <section id="sectionDashboard" class="content-section">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-box"></i></div>
+                    <div>
+                        <div class="stat-number" id="dTotalProducts">—</div>
+                        <div class="stat-label">Products</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon blue"><i class="fas fa-envelope"></i></div>
+                    <div>
+                        <div class="stat-number" id="dTotalInquiries">—</div>
+                        <div class="stat-label">Inquiries</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon red"><i class="fas fa-bell"></i></div>
+                    <div>
+                        <div class="stat-number" id="dUnreadInquiries">—</div>
+                        <div class="stat-label">Unread</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon green"><i class="fas fa-shopping-bag"></i></div>
+                    <div>
+                        <div class="stat-number" id="dTotalOrders">—</div>
+                        <div class="stat-label">Orders</div>
+                    </div>
+                </div>
+            </div>
+            <div class="dashboard-quick">
+                <h4>Quick Actions</h4>
+                <div class="quick-actions">
+                    <button class="quick-btn" onclick="openProductForm()"><i class="fas fa-plus"></i> Add Product</button>
+                    <button class="quick-btn" onclick="openOrderForm()"><i class="fas fa-plus"></i> Log Order</button>
+                    <button class="quick-btn" onclick="openCouponForm()"><i class="fas fa-tag"></i> Add Coupon</button>
+                    <a href="index.html" target="_blank" class="quick-btn"><i class="fas fa-eye"></i> View Site</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── ORDERS SECTION ── -->
+        <section id="sectionOrders" class="content-section">
+            <div class="section-toolbar">
+                <div class="toolbar-left">
+                    <select id="filterOrderStatus" class="filter-sel" onchange="filterOrders()">
+                        <option value="">All Statuses</option>
+                        <option>Pending</option>
+                        <option>Shipped</option>
+                        <option>Delivered</option>
+                    </select>
+                </div>
+                <button class="btn-add" onclick="openOrderForm()"><i class="fas fa-plus"></i> Log Order</button>
+            </div>
+            <div id="ordersList">
+                <div class="list-loading"><i class="fas fa-spinner fa-spin"></i> Loading orders…</div>
+            </div>
+        </section>
+
+        <!-- ── ORDER FORM ── -->
+        <section id="sectionOrderForm" class="content-section">
+            <div class="form-header">
+                <button class="btn-back" onclick="showSection('orders')"><i class="fas fa-arrow-left"></i> Back</button>
+                <h3 id="orderFormTitle">Log New Order</h3>
+            </div>
+            <form id="orderForm" class="product-form" onsubmit="saveOrder(event)">
+                <input type="hidden" id="editOrderId">
+                <div class="form-cols">
+                    <div class="form-col">
+                        <div class="field-row">
+                            <div class="field">
+                                <label>Customer Name *</label>
+                                <input type="text" id="oName" placeholder="Rahul Sharma" required>
+                            </div>
+                            <div class="field">
+                                <label>Phone *</label>
+                                <input type="tel" id="oPhone" placeholder="+91 98765 43210" required>
+                            </div>
+                        </div>
+                        <div class="field-row">
+                            <div class="field">
+                                <label>Product</label>
+                                <select id="oProduct"><option value="">— Select —</option></select>
+                            </div>
+                            <div class="field">
+                                <label>Quantity</label>
+                                <input type="number" id="oQty" value="1" min="1" step="1">
+                            </div>
+                        </div>
+                        <div class="field-row">
+                            <div class="field">
+                                <label>Size</label>
+                                <input type="text" id="oSize" placeholder="e.g. L or 32">
+                            </div>
+                            <div class="field">
+                                <label>Colour</label>
+                                <input type="text" id="oColor" placeholder="e.g. Navy Blue">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="field-row">
+                            <div class="field">
+                                <label>Total Amount (₹)</label>
+                                <input type="number" id="oAmount" placeholder="999" min="0" step="1">
+                            </div>
+                            <div class="field">
+                                <label>Status *</label>
+                                <select id="oStatus" required>
+                                    <option value="Pending">Pending</option>
+                                    <option value="Shipped">Shipped</option>
+                                    <option value="Delivered">Delivered</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label>Coupon Used</label>
+                            <input type="text" id="oCoupon" placeholder="e.g. FIRST10">
+                        </div>
+                        <div class="field">
+                            <label>Notes / Delivery Address</label>
+                            <textarea id="oNotes" rows="4" placeholder="Address, special requests…"></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn-cancel" onclick="showSection('orders')">Cancel</button>
+                            <button type="submit" class="btn-save" id="saveOrderBtn">
+                                <i class="fas fa-save"></i> Save Order
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </section>
+
+        <!-- ── COUPONS SECTION ── -->
+        <section id="sectionCoupons" class="content-section">
+            <div class="section-toolbar">
+                <div class="toolbar-left"></div>
+                <button class="btn-add" onclick="openCouponForm()"><i class="fas fa-plus"></i> Add Coupon</button>
+            </div>
+            <div id="couponsList">
+                <div class="list-loading"><i class="fas fa-spinner fa-spin"></i> Loading coupons…</div>
+            </div>
+        </section>
+
+        <!-- ── COUPON FORM ── -->
+        <section id="sectionCouponForm" class="content-section">
+            <div class="form-header">
+                <button class="btn-back" onclick="showSection('coupons')"><i class="fas fa-arrow-left"></i> Back</button>
+                <h3 id="couponFormTitle">Add Coupon</h3>
+            </div>
+            <form id="couponForm" class="product-form coupon-form" onsubmit="saveCoupon(event)">
+                <input type="hidden" id="editCouponId">
+                <div class="field-row">
+                    <div class="field">
+                        <label>Coupon Code *</label>
+                        <input type="text" id="cCode" placeholder="FIRST10" required style="text-transform:uppercase;">
+                    </div>
+                    <div class="field">
+                        <label>Discount % *</label>
+                        <input type="number" id="cDiscount" placeholder="10" min="1" max="99" required>
+                    </div>
+                </div>
+                <div class="field">
+                    <label>Title *</label>
+                    <input type="text" id="cDesc" placeholder="e.g. First Order Deal" required>
+                </div>
+                <div class="field">
+                    <label>Min Order Amount (₹) — optional</label>
+                    <input type="number" id="cMinOrder" placeholder="999" min="0" step="1">
+                </div>
+                <div class="field">
+                    <label>Expiry Date — optional</label>
+                    <input type="date" id="cExpiry">
+                </div>
+                <div class="toggle-row">
+                    <label>Active (visible on site)</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="cActive" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="form-actions" style="margin-top:16px;">
+                    <button type="button" class="btn-cancel" onclick="showSection('coupons')">Cancel</button>
+                    <button type="submit" class="btn-save" id="saveCouponBtn">
+                        <i class="fas fa-save"></i> Save Coupon
+                    </button>
                 </div>
             </form>
         </section>
@@ -246,6 +480,13 @@ service cloud.firestore {
     match /inquiries/{id} {
       allow create: if true;
       allow read, update, delete: if request.auth != null;
+    }
+    match /orders/{id} {
+      allow read, write: if request.auth != null;
+    }
+    match /coupons/{id} {
+      allow read: if true;
+      allow write: if request.auth != null;
     }
   }
 }</pre>
