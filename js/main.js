@@ -56,20 +56,17 @@ function productCard(p) {
     <div class="product-card reveal" onclick="openProductModal('${p.id}')">
         <div class="product-img ${p.imageUrl ? 'has-photo' : bgClass(p.category)}">
             ${imgHtml}
-            <div class="product-hover"><span class="btn btn-gold">View Details</span></div>
             ${badgeHtml}${discountBadge}
+            <div class="product-hover"><span class="btn btn-gold btn-sm">View Details</span></div>
         </div>
         <div class="product-body">
+            <p class="product-cat-tag">${p.category}</p>
             <h3>${p.name}</h3>
-            <p>${p.description}</p>
             <div class="product-price">
                 <span class="price-main">₹${p.price.toLocaleString('en-IN')}</span>
                 ${origPriceHtml}
+                ${discount ? `<span class="price-discount-pct">${discount}% off</span>` : ''}
             </div>
-            <button class="btn btn-outline-dark btn-sm"
-                onclick="event.stopPropagation();openProductModal('${p.id}')">
-                <i class="fas fa-ruler"></i> Select Size &amp; Colour
-            </button>
         </div>
     </div>`;
 }
