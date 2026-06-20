@@ -92,10 +92,10 @@ window.togglePass = () => {
 /* ============================================================
    NAVIGATION
    ============================================================ */
-const SECTIONS = ['dashboard','products','form','inquiries','orders','orderForm','coupons','couponForm','settings'];
+const SECTIONS = ['dashboard','products','form','inquiries','pos','orders','orderForm','coupons','couponForm','settings'];
 const TITLES   = {
     dashboard:'Dashboard', products:'Products', form:'',
-    inquiries:'Inquiries', orders:'Orders', orderForm:'',
+    inquiries:'Inquiries', pos:'Point of Sale', orders:'Orders', orderForm:'',
     coupons:'Coupons', couponForm:'', settings:'Settings'
 };
 
@@ -123,6 +123,8 @@ function startListeners() {
     listenInquiries();
     listenOrders();
     listenCoupons();
+    syncOfflineSales();
+    watchOnlineStatus();
 }
 
 /* ============================================================
@@ -144,6 +146,7 @@ function listenProducts() {
     onSnapshot(q, snap => {
         allProducts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         renderProductTable(allProducts);
+        renderPosProducts();
         updateDashboard();
     });
 }
@@ -795,4 +798,381 @@ function toast(msg, type = '') {
     t.className   = `admin-toast ${type} show`;
     clearTimeout(t._timer);
     t._timer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+/* ============================================================
+   POS — POINT OF SALE
+   ============================================================ */
+const POS_DEFAULT_SIZES = {
+    'T-Shirt':['S','M','L','XL','XXL'],
+    'Shirt':  ['S','M','L','XL','XXL'],
+    'Hoodie': ['S','M','L','XL','XXL','3XL'],
+    'Jeans':  ['28','30','32','34','36','38'],
+};
+
+let posCart          = [];
+let posPayMethod     = 'Cash';
+let posActiveCat     = '';
+let posCurProduct    = null;
+let posItemQty       = 1;
+let posSelSize       = '';
+let posSelColor      = '';
+let posAppliedCoupon = null;
+let posCouponDisc    = 0;
+let posLastSale      = null;
+
+/* — Catalog — */
+window.renderPosProducts = function() {
+    const grid = document.getElementById('posProductsGrid');
+    if (!grid) return;
+    const search = (document.getElementById('posSearch')?.value || '').toLowerCase();
+    let list = allProducts.filter(p => p.available !== false);
+    if (posActiveCat) list = list.filter(p => p.category === posActiveCat);
+    if (search) list = list.filter(p => p.name.toLowerCase().includes(search));
+
+    if (!list.length) {
+        grid.innerHTML = `<div class="pos-grid-empty"><i class="fas fa-box-open"></i><p>No products</p></div>`;
+        return;
+    }
+    grid.innerHTML = list.map(p => {
+        const bg  = {'T-Shirt':'bg-tshirt','Shirt':'bg-shirt','Hoodie':'bg-hoodie','Jeans':'bg-jeans'}[p.category]||'bg-tshirt';
+        const img = p.imageUrl
+            ? `<img src="${p.imageUrl}" alt="${p.name}" loading="lazy">`
+            : `<div class="pos-icon-bg ${bg}"><i class="fas fa-${iconFor(p.category)}"></i></div>`;
+        const disc = p.originalPrice && p.originalPrice > p.price
+            ? Math.round((1-p.price/p.originalPrice)*100) : null;
+        return `
+        <div class="pos-prod-card" onclick="openPosItem('${p.id}')">
+            <div class="pos-prod-img ${p.imageUrl ? 'has-img' : bg}">${img}</div>
+            <div class="pos-prod-info">
+                <p class="pos-prod-name">${p.name}</p>
+                <div class="pos-prod-price-row">
+                    <span class="pos-prod-price">₹${p.price.toLocaleString('en-IN')}</span>
+                    ${disc ? `<span class="pos-prod-disc">${disc}% off</span>` : ''}
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+};
+
+window.setPosCategory = (el, cat) => {
+    document.querySelectorAll('.pos-cat').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    posActiveCat = cat;
+    renderPosProducts();
+};
+
+/* — Item modal — */
+window.openPosItem = id => {
+    const p = allProducts.find(x => x.id === id);
+    if (!p) return;
+    posCurProduct = p;
+    posItemQty    = 1;
+    posSelSize    = '';
+    posSelColor   = '';
+
+    const bg = {'T-Shirt':'bg-tshirt','Shirt':'bg-shirt','Hoodie':'bg-hoodie','Jeans':'bg-jeans'}[p.category]||'bg-tshirt';
+    document.getElementById('posItemImgWrap').innerHTML = p.imageUrl
+        ? `<img src="${p.imageUrl}" alt="${p.name}" class="pos-modal-img">`
+        : `<div class="pos-modal-icon ${bg}"><i class="fas fa-${iconFor(p.category)}"></i></div>`;
+
+    document.getElementById('posItemName').textContent  = p.name;
+    document.getElementById('posItemPrice').textContent = `₹${p.price.toLocaleString('en-IN')}${p.originalPrice&&p.originalPrice>p.price ? ` (was ₹${p.originalPrice.toLocaleString('en-IN')})` : ''}`;
+    document.getElementById('posItemQtyDisplay').textContent = 1;
+
+    const sizes = (p.sizes&&p.sizes.length) ? p.sizes : (POS_DEFAULT_SIZES[p.category]||['S','M','L','XL','XXL']);
+    document.getElementById('posItemSizeBtns').innerHTML =
+        sizes.map(s => `<button class="pos-chip" onclick="selectPosSize('${s}',this)">${s}</button>`).join('');
+
+    if (p.colors && p.colors.length) {
+        document.getElementById('posItemColorBtns').innerHTML =
+            p.colors.map(c => `<button class="pos-chip" onclick="selectPosColor('${c}',this)">${c}</button>`).join('');
+    } else {
+        document.getElementById('posItemColorBtns').innerHTML =
+            `<span style="color:#999;font-size:.8rem;">All colours available — note in cart</span>`;
+    }
+
+    document.getElementById('posItemModal').style.display = 'flex';
+};
+
+window.closePosItemModal = () => {
+    document.getElementById('posItemModal').style.display = 'none';
+    posCurProduct = null;
+};
+
+window.selectPosSize = (s, el) => {
+    document.querySelectorAll('#posItemSizeBtns .pos-chip').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    posSelSize = s;
+};
+
+window.selectPosColor = (c, el) => {
+    document.querySelectorAll('#posItemColorBtns .pos-chip').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    posSelColor = c;
+};
+
+window.changePosQty = delta => {
+    posItemQty = Math.max(1, posItemQty + delta);
+    document.getElementById('posItemQtyDisplay').textContent = posItemQty;
+};
+
+window.addToCart = () => {
+    if (!posCurProduct) return;
+    const existing = posCart.find(i =>
+        i.id === posCurProduct.id && i.size === posSelSize && i.color === posSelColor
+    );
+    if (existing) {
+        existing.qty += posItemQty;
+    } else {
+        posCart.push({
+            id: posCurProduct.id, name: posCurProduct.name,
+            price: posCurProduct.price, size: posSelSize,
+            color: posSelColor, qty: posItemQty,
+        });
+    }
+    closePosItemModal();
+    renderPosCart();
+    toast(`Added: ${posCurProduct.name}`, 'success');
+};
+
+/* — Cart — */
+function renderPosCart() {
+    const el = document.getElementById('posCartItems');
+    if (!el) return;
+    if (!posCart.length) {
+        el.innerHTML = `<div class="pos-cart-empty"><i class="fas fa-hand-pointer"></i><p>Tap a product to add</p></div>`;
+        updatePosTotals();
+        return;
+    }
+    el.innerHTML = posCart.map((item, i) => `
+    <div class="pos-cart-row">
+        <div class="pos-cart-info">
+            <div class="pos-cart-name">${item.name}</div>
+            <div class="pos-cart-meta">${[item.size,item.color].filter(Boolean).join(' · ') || 'No size/colour'}</div>
+        </div>
+        <div class="pos-qty-inline">
+            <button onclick="changePosCartQty(${i},-1)">−</button>
+            <span>${item.qty}</span>
+            <button onclick="changePosCartQty(${i},1)">+</button>
+        </div>
+        <div class="pos-cart-line-price">₹${(item.price*item.qty).toLocaleString('en-IN')}</div>
+        <button class="pos-cart-del" onclick="removeFromPosCart(${i})"><i class="fas fa-times"></i></button>
+    </div>`).join('');
+    updatePosTotals();
+}
+
+window.changePosCartQty = (i, d) => { posCart[i].qty = Math.max(1, posCart[i].qty + d); renderPosCart(); };
+window.removeFromPosCart = i => { posCart.splice(i, 1); renderPosCart(); };
+window.clearPosCart = () => {
+    posCart = [];
+    posAppliedCoupon = null;
+    posCouponDisc    = 0;
+    if (document.getElementById('posCustomerName'))  document.getElementById('posCustomerName').value  = '';
+    if (document.getElementById('posCustomerPhone')) document.getElementById('posCustomerPhone').value = '';
+    if (document.getElementById('posCouponInput'))   document.getElementById('posCouponInput').value   = '';
+    if (document.getElementById('posCashTendered'))  document.getElementById('posCashTendered').value  = '';
+    document.getElementById('posDiscountRow').style.display = 'none';
+    document.getElementById('posChange').innerHTML = '';
+    renderPosCart();
+};
+
+function updatePosTotals() {
+    const sub  = posCart.reduce((s, i) => s + i.price * i.qty, 0);
+    const disc = posCouponDisc > 0 ? Math.round(sub * posCouponDisc / 100) : 0;
+    const total = sub - disc;
+    document.getElementById('posSubtotal').textContent  = `₹${sub.toLocaleString('en-IN')}`;
+    document.getElementById('posGrandTotal').textContent = `₹${total.toLocaleString('en-IN')}`;
+    const dr = document.getElementById('posDiscountRow');
+    if (disc > 0) {
+        document.getElementById('posDiscountLabel').textContent = `${posAppliedCoupon} (${posCouponDisc}% off)`;
+        document.getElementById('posDiscountAmt').textContent   = `-₹${disc.toLocaleString('en-IN')}`;
+        dr.style.display = 'flex';
+    } else {
+        dr.style.display = 'none';
+    }
+    calcPosChange();
+}
+
+/* — Coupon — */
+window.applyPosCoupon = () => {
+    const code = (document.getElementById('posCouponInput')?.value || '').trim().toUpperCase();
+    if (!code) return;
+    const c = allCoupons.find(x => x.code === code && x.active !== false);
+    if (c) {
+        posAppliedCoupon = c.code;
+        posCouponDisc    = c.discount;
+        updatePosTotals();
+        toast(`Coupon applied: ${c.discount}% off!`, 'success');
+    } else {
+        toast('Invalid or expired coupon', 'error');
+    }
+};
+
+/* — Payment — */
+window.setPosPayMethod = el => {
+    document.querySelectorAll('.pos-pay-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    posPayMethod = el.dataset.method;
+    const cashRow = document.getElementById('posCashRow');
+    if (cashRow) cashRow.style.display = posPayMethod === 'Cash' ? 'block' : 'none';
+    calcPosChange();
+};
+
+window.calcPosChange = () => {
+    const el = document.getElementById('posChange');
+    if (!el || posPayMethod !== 'Cash') { if(el) el.innerHTML=''; return; }
+    const sub     = posCart.reduce((s, i) => s + i.price * i.qty, 0);
+    const disc    = posCouponDisc > 0 ? Math.round(sub * posCouponDisc / 100) : 0;
+    const total   = sub - disc;
+    const tendered = Number(document.getElementById('posCashTendered')?.value) || 0;
+    if (total === 0) { el.innerHTML = ''; return; }
+    if (tendered >= total) {
+        el.innerHTML = `<span class="pos-change-ok"><i class="fas fa-check-circle"></i> Change: ₹${(tendered-total).toLocaleString('en-IN')}</span>`;
+    } else if (tendered > 0) {
+        el.innerHTML = `<span class="pos-change-due"><i class="fas fa-exclamation-circle"></i> Still due: ₹${(total-tendered).toLocaleString('en-IN')}</span>`;
+    } else {
+        el.innerHTML = '';
+    }
+};
+
+/* — Complete Sale — */
+window.completeSale = async () => {
+    if (!posCart.length) { toast('Cart is empty', 'error'); return; }
+    const name  = document.getElementById('posCustomerName')?.value.trim()  || 'Walk-in';
+    const phone = document.getElementById('posCustomerPhone')?.value.trim() || '';
+    const sub   = posCart.reduce((s, i) => s + i.price * i.qty, 0);
+    const disc  = posCouponDisc > 0 ? Math.round(sub * posCouponDisc / 100) : 0;
+    const total = sub - disc;
+    const orderId = `POS-${Date.now()}`;
+
+    const sale = {
+        orderId,
+        name, phone,
+        product:  posCart.map(i => i.name).join(', '),
+        items:    posCart.map(i => ({ name:i.name, size:i.size||'', color:i.color||'', qty:i.qty, price:i.price })),
+        qty:      posCart.reduce((s, i) => s + i.qty, 0),
+        subtotal: sub, discount: disc, amount: total,
+        coupon:   posAppliedCoupon || '',
+        payment:  posPayMethod,
+        status:   'Delivered',
+        source:   'pos',
+        updatedAt: serverTimestamp(),
+    };
+
+    const btn = document.querySelector('.pos-complete-btn');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing…';
+    btn.disabled  = true;
+
+    try {
+        await addDoc(collection(db, 'orders'), { ...sale, createdAt: serverTimestamp() });
+        posLastSale = { ...sale, createdAt: new Date() };
+        showPosReceipt();
+        toast('Sale completed!', 'success');
+    } catch (err) {
+        /* Offline — queue locally */
+        const q = JSON.parse(localStorage.getItem('lfp_pos_queue') || '[]');
+        q.push({ ...sale, createdAt: new Date().toISOString(), offline: true });
+        localStorage.setItem('lfp_pos_queue', JSON.stringify(q));
+        posLastSale = { ...sale, createdAt: new Date() };
+        showPosReceipt();
+        toast('Saved offline — will sync when connected', 'success');
+    } finally {
+        btn.innerHTML = '<i class="fas fa-check-circle"></i> Complete Sale';
+        btn.disabled  = false;
+    }
+};
+
+/* — Receipt — */
+function showPosReceipt() {
+    if (!posLastSale) return;
+    const s = posLastSale;
+    const date = (s.createdAt instanceof Date ? s.createdAt : new Date()).toLocaleString('en-IN');
+    document.getElementById('receiptDate').textContent   = date;
+    document.getElementById('receiptOrderId').textContent = s.orderId || '';
+
+    document.getElementById('receiptItems').innerHTML = `
+    <table class="receipt-table">
+        <thead><tr><th>Item</th><th>Sz</th><th>Qty</th><th>Amt</th></tr></thead>
+        <tbody>${s.items.map(i => `
+        <tr>
+            <td>${i.name}</td>
+            <td>${i.size||'—'}</td>
+            <td>${i.qty}</td>
+            <td>₹${(i.price*i.qty).toLocaleString('en-IN')}</td>
+        </tr>`).join('')}</tbody>
+    </table>`;
+
+    document.getElementById('receiptTotals').innerHTML = `
+        ${s.discount > 0 ? `
+        <div class="rt-row"><span>Subtotal</span><span>₹${s.subtotal.toLocaleString('en-IN')}</span></div>
+        <div class="rt-row rt-disc"><span>Discount (${s.coupon})</span><span>−₹${s.discount.toLocaleString('en-IN')}</span></div>` : ''}
+        <div class="rt-row rt-total"><span>Total</span><span>₹${s.amount.toLocaleString('en-IN')}</span></div>
+        <div class="rt-row"><span>Payment</span><span>${s.payment}</span></div>
+        <div class="rt-row"><span>Customer</span><span>${s.name}</span></div>`;
+
+    document.getElementById('receiptModal').style.display = 'flex';
+}
+
+window.printReceipt = () => {
+    const html = document.getElementById('receiptContent').innerHTML;
+    const win  = window.open('', '_blank', 'width=400,height=600');
+    win.document.write(`<!DOCTYPE html><html><head><title>Receipt</title>
+    <style>
+      body{font-family:monospace;max-width:320px;margin:auto;padding:16px;font-size:13px}
+      h2{text-align:center;font-size:1.1rem}p{text-align:center;margin:2px 0}
+      table{width:100%;border-collapse:collapse;margin:10px 0}
+      th,td{padding:3px 2px;font-size:.8rem}th{border-bottom:1px solid #000}
+      .receipt-totals{margin-top:8px;border-top:1px dashed #000;padding-top:8px}
+      .rt-row{display:flex;justify-content:space-between;padding:2px 0}
+      .rt-total{font-weight:bold;border-top:1px solid #000;padding-top:5px;margin-top:4px}
+      .rt-disc{color:green}.receipt-footer{text-align:center;margin-top:12px;border-top:1px dashed #000;padding-top:8px;font-size:.75rem;color:#555}
+      .receipt-header{border-bottom:1px dashed #000;padding-bottom:8px;margin-bottom:8px}
+    </style></head><body>${html}</body></html>`);
+    win.document.close();
+    setTimeout(() => win.print(), 300);
+};
+
+window.whatsappReceipt = () => {
+    if (!posLastSale) return;
+    const s    = posLastSale;
+    const lines = s.items.map(i => `• ${i.name} (${i.size||'OS'}) ×${i.qty} = ₹${(i.price*i.qty).toLocaleString('en-IN')}`).join('\n');
+    const disc  = s.discount > 0 ? `\nDiscount (${s.coupon}): −₹${s.discount.toLocaleString('en-IN')}` : '';
+    const msg   = `*LaFashionPoint — Receipt*\n${new Date().toLocaleString('en-IN')}\n\n${lines}${disc}\n\n*Total: ₹${s.amount.toLocaleString('en-IN')}*\nPayment: ${s.payment}\n\nThank you, ${s.name}! 🙏`;
+    const num   = s.phone ? `91${s.phone.replace(/\D/g,'')}` : '919079661164';
+    window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener');
+};
+
+window.startNewSale = () => {
+    document.getElementById('receiptModal').style.display = 'none';
+    clearPosCart();
+    posLastSale = null;
+    syncOfflineSales();
+};
+
+/* — Offline sync — */
+async function syncOfflineSales() {
+    const queue = JSON.parse(localStorage.getItem('lfp_pos_queue') || '[]');
+    if (!queue.length) return;
+    const synced = [];
+    for (const sale of queue) {
+        try {
+            const { offline, createdAt, ...data } = sale;
+            await addDoc(collection(db, 'orders'), { ...data, createdAt: serverTimestamp(), synced: true });
+            synced.push(sale);
+        } catch (_) {}
+    }
+    if (synced.length) {
+        const remaining = queue.filter(s => !synced.includes(s));
+        localStorage.setItem('lfp_pos_queue', JSON.stringify(remaining));
+        toast(`${synced.length} offline sale(s) synced to Firebase!`, 'success');
+    }
+}
+
+function watchOnlineStatus() {
+    const badge = document.getElementById('offlineBadge');
+    const update = () => { if (badge) badge.style.display = navigator.onLine ? 'none' : 'block'; };
+    window.addEventListener('online',  () => { update(); syncOfflineSales(); });
+    window.addEventListener('offline', update);
+    update();
 }
