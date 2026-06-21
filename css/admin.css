@@ -1075,6 +1075,50 @@ input:checked + .slider::before { transform: translateX(20px); }
 .pos-chip small     { display: block; font-size: .65rem; line-height: 1; color: #388e3c; }
 
 /* ============================================================
+   POS ONLINE ORDER LOADER
+   ============================================================ */
+.pos-order-loader {
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+.pol-toggle {
+    width: 100%; padding: 10px 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: .8rem; font-weight: 600; color: var(--denim);
+    background: rgba(42,74,107,.06); cursor: pointer;
+    border: none; font-family: inherit; transition: var(--trans);
+}
+.pol-toggle:hover { background: rgba(42,74,107,.1); }
+.pol-toggle span  { display: flex; align-items: center; gap: 7px; }
+.pol-toggle i.fa-chevron-down { transition: transform .25s ease; font-size: .75rem; }
+
+.pol-body { padding: 10px 12px 12px; background: var(--bg); }
+.pol-input-row { display: flex; gap: 6px; }
+.pol-input-row input {
+    flex: 1; padding: 9px 12px;
+    border: 1.5px solid var(--border); border-radius: 6px;
+    font-family: 'Courier New', monospace; font-size: .95rem; font-weight: 700;
+    letter-spacing: .15em; color: var(--text); outline: none;
+    background: var(--surface); text-transform: uppercase;
+    transition: var(--trans);
+}
+.pol-input-row input:focus { border-color: var(--info); box-shadow: 0 0 0 2px rgba(59,130,246,.1); }
+.pol-input-row button {
+    padding: 9px 14px; background: var(--info); color: #fff;
+    border: none; border-radius: 6px; font-family: inherit;
+    font-size: .82rem; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; gap: 5px; white-space: nowrap;
+    transition: var(--trans);
+}
+.pol-input-row button:hover:not(:disabled) { background: #2563eb; }
+.pol-input-row button:disabled { opacity: .65; cursor: not-allowed; }
+.pol-hint {
+    margin-top: 8px; font-size: .73rem; color: var(--text-m);
+    display: flex; align-items: flex-start; gap: 5px; line-height: 1.5;
+}
+.pol-hint i { color: var(--info); margin-top: 2px; flex-shrink: 0; }
+
+/* ============================================================
    CATEGORY MANAGEMENT
    ============================================================ */
 .cat-color-presets {

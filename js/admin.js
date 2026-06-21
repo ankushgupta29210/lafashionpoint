@@ -6,7 +6,7 @@ import {
 
 import {
     collection, doc, addDoc, updateDoc, deleteDoc,
-    onSnapshot, query, orderBy, serverTimestamp, getDocs
+    onSnapshot, query, orderBy, where, serverTimestamp, getDocs
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 import {
@@ -1476,6 +1476,98 @@ function watchOnlineStatus() {
     window.addEventListener('offline', update);
     update();
 }
+
+/* ============================================================
+   POS — LOAD ONLINE ORDER (website reservation → POS cart)
+   ============================================================ */
+let loadedReservationRef = null;
+
+window.toggleOrderLoader = () => {
+    const body    = document.getElementById('polBody');
+    const chevron = document.getElementById('polChevron');
+    if (!body) return;
+    const opening = body.style.display === 'none';
+    body.style.display = opening ? 'block' : 'none';
+    if (chevron) chevron.style.transform = opening ? 'rotate(180deg)' : '';
+};
+
+window.loadOnlineOrder = async () => {
+    const code = (document.getElementById('orderCodeInput')?.value || '').trim().toUpperCase();
+    if (!code) { toast('Enter an order code', 'error'); return; }
+
+    const btn = document.querySelector('#polBody button');
+    if (btn) { btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; btn.disabled = true; }
+
+    try {
+        const snap = await getDocs(
+            query(collection(db, 'reservations'), where('code', '==', code), where('status', '==', 'pending'))
+        );
+
+        if (snap.empty) {
+            toast(`Code "${code}" not found or already used`, 'error');
+            return;
+        }
+
+        const resDoc = snap.docs[0];
+        const data   = resDoc.data();
+
+        /* Check 24-hour expiry */
+        if (data.expiresAt && new Date(data.expiresAt) < new Date()) {
+            toast('This reservation expired (24 hours limit)', 'error');
+            return;
+        }
+
+        /* Clear current cart and load reservation items */
+        clearPosCart();
+        loadedReservationRef = resDoc.ref;
+
+        for (const item of (data.items || [])) {
+            posCart.push({
+                id:    item.productId || '',
+                name:  item.name      || 'Product',
+                price: item.price     || 0,
+                size:  item.size      || '',
+                color: item.color     || '',
+                qty:   item.qty       || 1,
+            });
+        }
+
+        /* Prefill customer details */
+        const nameEl  = document.getElementById('posCustomerName');
+        const phoneEl = document.getElementById('posCustomerPhone');
+        if (nameEl)  nameEl.value  = data.customerName  || '';
+        if (phoneEl) phoneEl.value = data.customerPhone || '';
+
+        /* Mark reservation as loaded so it can't be double-loaded */
+        await updateDoc(resDoc.ref, { status: 'loaded', loadedAt: serverTimestamp() });
+
+        renderPosCart();
+
+        /* Close the loader panel */
+        document.getElementById('polBody').style.display = 'none';
+        document.getElementById('polChevron').style.transform = '';
+        if (document.getElementById('orderCodeInput')) document.getElementById('orderCodeInput').value = '';
+
+        toast(`Order ${code} loaded — ${data.items.length} item(s) for ${data.customerName}`, 'success');
+
+    } catch (err) {
+        console.error(err);
+        toast('Error loading order — check connection', 'error');
+    } finally {
+        if (btn) { btn.innerHTML = '<i class="fas fa-arrow-right"></i> Load'; btn.disabled = false; }
+    }
+};
+
+/* When a sale completes, mark the reservation as completed too */
+const _originalCompleteSale = window.completeSale;
+window.completeSale = async function() {
+    await _originalCompleteSale();
+    if (loadedReservationRef) {
+        try { await updateDoc(loadedReservationRef, { status: 'completed', completedAt: serverTimestamp() }); }
+        catch (_) {}
+        loadedReservationRef = null;
+    }
+};
 
 /* ============================================================
    CATEGORIES — dynamic category management

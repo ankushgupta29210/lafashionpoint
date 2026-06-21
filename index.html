@@ -48,6 +48,10 @@
       <i class="far fa-heart"></i>
       <span class="wishlist-count" id="wishlistCount" style="display:none;"></span>
     </button>
+    <button class="nav-bag-btn" onclick="openBag()" title="My Bag — Reserve for Pickup" aria-label="Open bag">
+      <i class="fas fa-shopping-bag"></i>
+      <span class="bag-count" id="bagCount" style="display:none;"></span>
+    </button>
     <a href="https://wa.me/919079661164" target="_blank" rel="noopener" class="nav-wa-btn" aria-label="Order on WhatsApp">
       <i class="fab fa-whatsapp"></i> Order Now
     </a>
@@ -745,6 +749,11 @@
         <i class="fab fa-whatsapp"></i> Order on WhatsApp
       </button>
 
+      <button class="pd-bag-add-btn" onclick="addToBag()">
+        <i class="fas fa-shopping-bag"></i> Add to Bag
+        <small>Reserve for in-store pickup</small>
+      </button>
+
       <button class="pd-buy-btn" onclick="buyNow()">
         <i class="fas fa-bolt"></i> Buy Now — Pay Online
       </button>
@@ -812,6 +821,57 @@
 
 <!-- ===== TOAST ===== -->
 <div id="toast" class="toast" role="alert" aria-live="polite"></div>
+
+<!-- ===== BAG PANEL (Reserve for Pickup) ===== -->
+<div class="bag-overlay" id="bagOverlay" style="display:none;" onclick="if(event.target===this)closeBag()">
+  <div class="bag-panel" id="bagPanel">
+    <div class="bag-header">
+      <div>
+        <h3><i class="fas fa-shopping-bag"></i> My Bag</h3>
+        <p class="bag-subtitle">Reserve online · Pick up in store · Pay then</p>
+      </div>
+      <button class="bag-close" onclick="closeBag()"><i class="fas fa-times"></i></button>
+    </div>
+
+    <div class="bag-items" id="bagItems">
+      <div class="bag-empty">
+        <i class="fas fa-shopping-bag"></i>
+        <p>Your bag is empty</p>
+        <small>Add items using <strong>Add to Bag</strong> in any product</small>
+      </div>
+    </div>
+
+    <div class="bag-footer" id="bagFooter" style="display:none;">
+      <div class="bag-total-row" id="bagTotalRow"></div>
+      <div class="bag-reserve-section">
+        <h4><i class="fas fa-store"></i> Reserve for Pickup</h4>
+        <p>We'll hold your items for <strong>24 hours</strong>. Pay at the store.</p>
+        <input type="text"  id="bagName"  placeholder="Your name *" autocomplete="name">
+        <input type="tel"   id="bagPhone" placeholder="Phone number *" autocomplete="tel">
+        <button class="bag-reserve-btn" onclick="submitReservation()">
+          <i class="fas fa-store"></i> Reserve for Pickup
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== RESERVATION SUCCESS ===== -->
+<div class="res-success-overlay" id="reservationSuccess" style="display:none;">
+  <div class="res-success-box">
+    <div class="res-success-icon"><i class="fas fa-check-circle"></i></div>
+    <h2>Items Reserved!</h2>
+    <p>Show this code at the store counter:</p>
+    <div class="res-order-code" id="resOrderCode"></div>
+    <button class="res-copy-btn" onclick="copyOrderCode()">
+      <i class="fas fa-copy"></i> Copy Code
+    </button>
+    <div class="res-details" id="resDetails"></div>
+    <p class="res-note"><i class="fas fa-clock"></i> Valid for <strong>24 hours</strong> · Items held for you · Pay at store</p>
+    <p class="res-note"><i class="fab fa-whatsapp"></i> WhatsApp confirmation sent to your number</p>
+    <button class="res-done-btn" onclick="closeReservationSuccess()">Done</button>
+  </div>
+</div>
 
 <script type="module" src="js/main.js"></script>
 </body>

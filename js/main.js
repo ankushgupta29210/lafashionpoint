@@ -1056,6 +1056,197 @@ window.showToast = function(msg) {
 };
 
 /* ============================================================
+   SHOPPING BAG — in-store reservation (website → POS order code)
+   ============================================================ */
+function getBag()       { try { return JSON.parse(localStorage.getItem('lfp_bag')||'[]'); } catch { return []; } }
+function saveBag(items) { localStorage.setItem('lfp_bag', JSON.stringify(items)); updateBagCount(); }
+
+function updateBagCount() {
+    const n = getBag().reduce((s,i) => s + (i.qty||1), 0);
+    const el = document.getElementById('bagCount');
+    if (!el) return;
+    el.textContent = n;
+    el.style.display = n ? 'flex' : 'none';
+}
+
+window.addToBag = function() {
+    if (!currentProduct) return;
+    const bag = getBag();
+    const existing = bag.find(i => i.productId===currentProduct.id && i.size===selectedSize && i.color===selectedColor);
+    if (existing) {
+        existing.qty = (existing.qty||1) + 1;
+        showToast('Quantity updated in bag');
+    } else {
+        const imgs = (currentProduct.images&&currentProduct.images.length) ? currentProduct.images : (currentProduct.imageUrl ? [currentProduct.imageUrl] : []);
+        bag.push({
+            productId: currentProduct.id,
+            name:      currentProduct.name,
+            price:     currentProduct.price,
+            size:      selectedSize  || '',
+            color:     selectedColor || '',
+            imageUrl:  imgs[0] || '',
+            category:  currentProduct.category || '',
+            qty:       1,
+        });
+        showToast('Added to bag ✓ — open bag to reserve');
+    }
+    saveBag(bag);
+    closeProductModal();
+};
+
+window.openBag = function() {
+    renderBag();
+    const ov = document.getElementById('bagOverlay');
+    ov.style.display = 'flex';
+    requestAnimationFrame(() => requestAnimationFrame(() => ov.classList.add('open')));
+    document.body.style.overflow = 'hidden';
+};
+
+window.closeBag = function() {
+    const ov = document.getElementById('bagOverlay');
+    ov.classList.remove('open');
+    ov.addEventListener('transitionend', () => { ov.style.display = 'none'; }, { once: true });
+    document.body.style.overflow = '';
+};
+
+function renderBag() {
+    const items   = getBag();
+    const itemsEl = document.getElementById('bagItems');
+    const footer  = document.getElementById('bagFooter');
+    if (!itemsEl) return;
+
+    if (!items.length) {
+        itemsEl.innerHTML = `
+        <div class="bag-empty">
+            <i class="fas fa-shopping-bag"></i>
+            <p>Your bag is empty</p>
+            <small>Tap <strong>Add to Bag</strong> inside any product</small>
+        </div>`;
+        if (footer) footer.style.display = 'none';
+        return;
+    }
+
+    if (footer) footer.style.display = 'block';
+    const subtotal = items.reduce((s, i) => s + i.price * (i.qty||1), 0);
+
+    itemsEl.innerHTML = items.map((item, idx) => `
+    <div class="bag-item">
+        <div class="bag-item-img">
+            ${item.imageUrl
+                ? `<img src="${item.imageUrl}" alt="${item.name}">`
+                : `<i class="fas fa-tshirt"></i>`}
+        </div>
+        <div class="bag-item-info">
+            <p class="bag-item-name">${item.name}</p>
+            <p class="bag-item-meta">${[item.size,item.color].filter(Boolean).join(' · ')||'No size/colour'}</p>
+            <p class="bag-item-price">₹${(item.price*(item.qty||1)).toLocaleString('en-IN')}</p>
+        </div>
+        <div class="bag-item-qty">
+            <button onclick="changeBagQty(${idx},-1)">−</button>
+            <span>${item.qty||1}</span>
+            <button onclick="changeBagQty(${idx},1)">+</button>
+        </div>
+        <button class="bag-item-remove" onclick="removeBagItem(${idx})"><i class="fas fa-times"></i></button>
+    </div>`).join('');
+
+    const totalEl = document.getElementById('bagTotalRow');
+    if (totalEl) totalEl.innerHTML = `<span>Total (${items.reduce((s,i)=>s+(i.qty||1),0)} items)</span><span>₹${subtotal.toLocaleString('en-IN')}</span>`;
+}
+
+window.changeBagQty = function(idx, d) {
+    const bag = getBag();
+    bag[idx].qty = Math.max(1, (bag[idx].qty||1) + d);
+    saveBag(bag); renderBag();
+};
+
+window.removeBagItem = function(idx) {
+    const bag = getBag();
+    bag.splice(idx, 1);
+    saveBag(bag); renderBag();
+};
+
+window.submitReservation = async function() {
+    const name  = document.getElementById('bagName')?.value.trim();
+    const phone = document.getElementById('bagPhone')?.value.trim();
+    const items = getBag();
+
+    if (!name)         { showToast('Please enter your name');   return; }
+    if (!phone)        { showToast('Please enter your phone');  return; }
+    if (!items.length) { showToast('Your bag is empty');        return; }
+
+    const btn = document.querySelector('.bag-reserve-btn');
+    if (btn) { btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Reserving…'; btn.disabled = true; }
+
+    const code     = generateOrderCode();
+    const subtotal = items.reduce((s, i) => s + i.price * (i.qty||1), 0);
+    const expires  = new Date(Date.now() + 24*60*60*1000).toISOString();
+
+    try {
+        await addDoc(collection(db, 'reservations'), {
+            code,
+            customerName:  name,
+            customerPhone: phone,
+            items: items.map(i => ({
+                productId: i.productId,
+                name:      i.name,
+                size:      i.size  || '',
+                color:     i.color || '',
+                price:     i.price,
+                qty:       i.qty  || 1,
+                imageUrl:  i.imageUrl || '',
+                category:  i.category || '',
+            })),
+            subtotal,
+            status:    'pending',
+            expiresAt: expires,
+            createdAt: serverTimestamp(),
+        });
+
+        saveBag([]);
+        closeBag();
+        showReservationSuccess(code, name, phone, items, subtotal);
+
+        /* WhatsApp confirmation to customer */
+        const lines = items.map(i => `• ${i.name} (${i.size||'OS'}) ×${i.qty||1} = ₹${(i.price*(i.qty||1)).toLocaleString('en-IN')}`).join('\n');
+        const msg   = `Hi ${name}! Your LaFashionPoint reservation is confirmed ✅\n\nOrder Code: *${code}*\n\n${lines}\n\nTotal: ₹${subtotal.toLocaleString('en-IN')}\n\nShow this code at our store. Items held for 24 hours.\n📍 Hanumangarh, Rajasthan`;
+        setTimeout(() => window.open(`https://wa.me/91${phone.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener'), 600);
+
+    } catch (err) {
+        console.error(err);
+        showToast('Could not reserve — please WhatsApp us directly');
+    } finally {
+        if (btn) { btn.innerHTML = '<i class="fas fa-store"></i> Reserve for Pickup'; btn.disabled = false; }
+    }
+};
+
+function generateOrderCode() {
+    const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+    return Array.from({length: 5}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
+}
+
+function showReservationSuccess(code, name, phone, items, subtotal) {
+    const el = document.getElementById('reservationSuccess');
+    if (!el) return;
+    document.getElementById('resOrderCode').textContent = code;
+    document.getElementById('resDetails').innerHTML =
+        `<strong>${name}</strong> · ${phone}<br>${items.reduce((s,i)=>s+(i.qty||1),0)} item(s) · ₹${subtotal.toLocaleString('en-IN')}`;
+    el.style.display = 'flex';
+}
+
+window.copyOrderCode = function() {
+    const code = document.getElementById('resOrderCode')?.textContent;
+    if (code) navigator.clipboard.writeText(code).then(() => showToast('Order code copied!'));
+};
+
+window.closeReservationSuccess = function() {
+    const el = document.getElementById('reservationSuccess');
+    if (el) el.style.display = 'none';
+};
+
+/* init */
+updateBagCount();
+
+/* ============================================================
    COPY COUPON
    ============================================================ */
 window.copyCoupon = function(code) {
