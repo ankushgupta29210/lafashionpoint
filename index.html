@@ -1,707 +1,866 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LaFashionPoint – Premium Men's Fashion</title>
-    <meta name="description" content="LaFashionPoint – Premium men's T-shirts, Shirts, Hoodies & Jeans. Ships across India. Order on WhatsApp.">
-    <meta name="keywords" content="men fashion, t-shirts, shirts, hoodies, jeans, India, Hanumangarh, LaFashionPoint">
-    <meta property="og:title" content="LaFashionPoint – Premium Men's Fashion">
-    <meta property="og:description" content="Premium quality men's clothing. Ships across India.">
-    <meta property="og:type" content="website">
-    <meta property="og:image" content="logo.png">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LA FASHION POINT — Premium Men's Fashion</title>
+<meta name="description" content="LaFashionPoint – Premium men's T-Shirts, Shirts, Hoodies & Jeans. Ships across India. WhatsApp orders 24/7. Hanumangarh, Rajasthan.">
+<meta name="keywords" content="men fashion, t-shirts, shirts, hoodies, jeans, India, Hanumangarh, LaFashionPoint">
+<meta property="og:title" content="LA Fashion Point — Premium Men's Fashion">
+<meta property="og:description" content="Premium quality men's clothing. Ships across India. WhatsApp orders 24/7.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="logo.png">
 
-    <!-- PWA -->
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#C9A84C">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-title" content="LaFashionPoint">
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2a4a6b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="LaFashionPoint">
 
-    <!-- Razorpay -->
-    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<!-- Razorpay -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
-    <link rel="icon" type="image/png" href="logo.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link rel="stylesheet" href="css/style.css">
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-    <!-- ===== NAVIGATION ===== -->
-    <header id="header">
-        <nav class="navbar">
-            <a href="#home" class="logo-link">
-                <img src="logo.png" alt="LaFashionPoint" class="nav-logo" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
-                <span class="logo-text-fallback logo">La<span>Fashion</span>Point</span>
-            </a>
-            <ul class="nav-links" id="navLinks">
-                <li><a href="#home"     class="nav-link active">Home</a></li>
-                <li><a href="#products" class="nav-link">Products</a></li>
-                <li><a href="#offers"   class="nav-link">Offers</a></li>
-                <li><a href="#about"    class="nav-link">About</a></li>
-                <li><a href="#track"    class="nav-link">Track</a></li>
-                <li><a href="#faq"      class="nav-link">FAQ</a></li>
-                <li><a href="#contact"  class="nav-link">Contact</a></li>
-            </ul>
-            <!-- Wishlist button in nav -->
-            <button class="nav-wishlist" onclick="openWishlist()" title="Wishlist">
-                <i class="far fa-heart"></i>
-                <span class="wishlist-count" id="wishlistCount" style="display:none;"></span>
-            </button>
-            <a href="https://wa.me/919079661164" target="_blank" rel="noopener" class="btn btn-wa nav-cta">
-                <i class="fab fa-whatsapp"></i> Order Now
-            </a>
-            <button class="hamburger" id="hamburger" aria-label="Toggle menu">
-                <span></span><span></span><span></span>
-            </button>
-        </nav>
-    </header>
+<!-- ===== NAVIGATION ===== -->
+<nav class="nav" id="mainNav">
+  <a href="#" class="nav-logo">LA <span>FASHION</span> POINT</a>
 
-    <!-- ===== HERO ===== -->
-    <section id="home" class="hero">
-        <div class="hero-bg"></div>
-        <div class="hero-content">
-            <p class="hero-tag">Men's Premium Fashion</p>
-            <h1>Style That <span class="gold">Speaks</span><br>For You</h1>
-            <p class="hero-sub">T-Shirts · Shirts · Hoodies · Jeans — Delivered Across India</p>
-            <div class="hero-btns">
-                <a href="#products" class="btn btn-gold">Shop Now</a>
-                <a href="https://wa.me/919079661164" target="_blank" rel="noopener" class="btn btn-wa-outline">
-                    <i class="fab fa-whatsapp"></i> Order on WhatsApp
-                </a>
-            </div>
-        </div>
-        <div class="hero-scroll">
-            <a href="#products"><i class="fas fa-chevron-down"></i></a>
-        </div>
-    </section>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="#" class="nav-link active">Home</a></li>
+    <li><a href="#products" class="nav-link">Products</a></li>
+    <li><a href="#offers" class="nav-link">Offers</a></li>
+    <li><a href="#about" class="nav-link">About</a></li>
+    <li><a href="#track" class="nav-link">Track</a></li>
+    <li><a href="#faq" class="nav-link">FAQ</a></li>
+    <li><a href="#contact" class="nav-link">Contact</a></li>
+  </ul>
 
-    <!-- ===== FEATURES BAR ===== -->
-    <div class="features-bar">
-        <div class="container">
-            <div class="feature"><i class="fas fa-truck"></i><span>Pan India Delivery</span></div>
-            <div class="feature"><i class="fas fa-star"></i><span>Premium Quality</span></div>
-            <div class="feature"><i class="fab fa-whatsapp"></i><span>WhatsApp Orders</span></div>
-            <div class="feature"><i class="fas fa-tag"></i><span>Exclusive Discounts</span></div>
-            <div class="feature"><i class="fas fa-hand-holding-usd"></i><span>Cash on Delivery</span></div>
-        </div>
-    </div>
-
-    <!-- ===== PRODUCTS ===== -->
-    <section id="products" class="section products-section">
-        <div class="container">
-            <div class="section-header">
-                <p class="tag">Our Collection</p>
-                <h2>Men's Fashion</h2>
-                <p class="section-desc">Premium clothing for every occasion — all colours available</p>
-            </div>
-
-            <!-- Search Bar -->
-            <div class="site-search-bar">
-                <i class="fas fa-search"></i>
-                <input type="text" id="siteSearch" placeholder="Search T-shirts, Hoodies, Jeans…" oninput="handleSearch()">
-                <button id="searchClear" onclick="clearSearch()" style="display:none;"><i class="fas fa-times"></i></button>
-            </div>
-
-            <!-- Filter Bar -->
-            <div class="products-filter-bar">
-                <div class="cat-tabs">
-                    <button class="cat-tab active" data-cat="">All</button>
-                    <button class="cat-tab" data-cat="T-Shirt">T-Shirts</button>
-                    <button class="cat-tab" data-cat="Shirt">Shirts</button>
-                    <button class="cat-tab" data-cat="Hoodie">Hoodies</button>
-                    <button class="cat-tab" data-cat="Jeans">Jeans</button>
-                </div>
-                <select class="sort-select" id="sortSelect">
-                    <option value="">Sort: Default</option>
-                    <option value="low">Price: Low to High</option>
-                    <option value="high">Price: High to Low</option>
-                </select>
-            </div>
-
-            <!-- Loading state -->
-            <div id="productsLoading" class="products-loading">
-                <div class="spinner"></div>
-                <p>Loading products…</p>
-            </div>
-
-            <!-- Products grid — filled by JS -->
-            <div id="productsGrid" class="products-grid" style="display:none;"></div>
-
-            <!-- Empty state -->
-            <div id="productsEmpty" class="products-empty" style="display:none;">
-                <i class="fas fa-box-open"></i>
-                <p>Products coming soon! Contact us on WhatsApp to order.</p>
-                <a href="https://wa.me/919079661164" target="_blank" rel="noopener" class="btn btn-gold">
-                    <i class="fab fa-whatsapp"></i> WhatsApp Us
-                </a>
-            </div>
-        </div>
-    </section>
-
-    <!-- ===== DISCOUNT COUPONS ===== -->
-    <section id="offers" class="section offers-section">
-        <div class="container">
-            <div class="section-header light">
-                <p class="tag">Special Deals</p>
-                <h2>Exclusive Discount Coupons</h2>
-                <p class="section-desc">Share these codes when ordering to get amazing savings</p>
-            </div>
-            <!-- Coupons filled by JS from Firestore (fallback to defaults) -->
-            <div class="coupons-grid" id="couponsGrid"></div>
-        </div>
-    </section>
-
-    <!-- ===== PAYMENT METHODS ===== -->
-    <section class="section payment-section">
-        <div class="container">
-            <div class="section-header">
-                <p class="tag">Hassle-Free Payments</p>
-                <h2>We Accept All Payment Methods</h2>
-            </div>
-            <div class="payment-grid">
-                <div class="payment-card">
-                    <div class="pay-icon"><i class="fas fa-mobile-alt"></i></div>
-                    <h4>UPI</h4>
-                    <p>GPay, PhonePe, Paytm & more</p>
-                </div>
-                <div class="payment-card">
-                    <div class="pay-icon"><i class="fas fa-shield-alt"></i></div>
-                    <h4>Razorpay</h4>
-                    <p>100% safe & secure gateway</p>
-                </div>
-                <div class="payment-card">
-                    <div class="pay-icon"><i class="fas fa-hand-holding-usd"></i></div>
-                    <h4>Cash on Delivery</h4>
-                    <p>Pay when your order arrives</p>
-                </div>
-                <div class="payment-card">
-                    <div class="pay-icon"><i class="fas fa-credit-card"></i></div>
-                    <h4>Credit / Debit Cards</h4>
-                    <p>Visa, Mastercard, RuPay</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ===== ABOUT ===== -->
-    <section id="about" class="section about-section">
-        <div class="container">
-            <div class="about-grid">
-                <div class="about-content">
-                    <p class="tag">Our Story</p>
-                    <h2>About LaFashionPoint</h2>
-                    <p>We are a passionate men's fashion store rooted in Hanumangarh, Rajasthan. Our goal is simple — bring premium quality, trend-forward clothing to every man in India at prices that make sense.</p>
-                    <p>From everyday T-shirts to stylish hoodies and the perfect pair of jeans, every piece in our collection is carefully chosen for quality, comfort, and style.</p>
-                    <div class="about-stats">
-                        <div class="stat">
-                            <span class="stat-n">500+</span>
-                            <span class="stat-l">Happy Customers</span>
-                        </div>
-                        <div class="stat">
-                            <span class="stat-n">4+</span>
-                            <span class="stat-l">Categories</span>
-                        </div>
-                        <div class="stat">
-                            <span class="stat-n">All</span>
-                            <span class="stat-l">India Delivery</span>
-                        </div>
-                    </div>
-                    <a href="https://wa.me/919079661164" target="_blank" rel="noopener" class="btn btn-gold">
-                        <i class="fab fa-whatsapp"></i> Chat With Us
-                    </a>
-                </div>
-                <div class="about-cards">
-                    <div class="about-card">
-                        <i class="fas fa-star"></i>
-                        <h4>Premium Quality</h4>
-                        <p>Finest fabrics, great stitching, and lasting comfort — always.</p>
-                    </div>
-                    <div class="about-card">
-                        <i class="fas fa-truck"></i>
-                        <h4>Fast Delivery</h4>
-                        <p>Quick and reliable shipping to any corner of India.</p>
-                    </div>
-                    <div class="about-card">
-                        <i class="fas fa-headset"></i>
-                        <h4>Friendly Support</h4>
-                        <p>Reach us any time on WhatsApp — we're always happy to help.</p>
-                    </div>
-                    <div class="about-card">
-                        <i class="fas fa-palette"></i>
-                        <h4>All Colours</h4>
-                        <p>Choose from a full spectrum of colours for every style.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ===== INSTAGRAM ===== -->
-    <section class="section instagram-section">
-        <div class="container">
-            <div class="section-header">
-                <p class="tag">Follow Us</p>
-                <h2>@LaFashionPoint on Instagram</h2>
-                <p class="section-desc">Tag us in your photos for a chance to be featured</p>
-            </div>
-            <div class="instagram-grid">
-                <a href="https://instagram.com/lafashionpoint" target="_blank" rel="noopener" class="ig-cell" style="background:linear-gradient(135deg,#C9A84C,#1a1205);">
-                    <i class="fas fa-camera"></i>
-                </a>
-                <a href="https://instagram.com/lafashionpoint" target="_blank" rel="noopener" class="ig-cell" style="background:linear-gradient(135deg,#1a1a2e,#C9A84C);">
-                    <i class="fas fa-camera"></i>
-                </a>
-                <a href="https://instagram.com/lafashionpoint" target="_blank" rel="noopener" class="ig-cell" style="background:linear-gradient(135deg,#9a7520,#0e0e0e);">
-                    <i class="fas fa-camera"></i>
-                </a>
-                <a href="https://instagram.com/lafashionpoint" target="_blank" rel="noopener" class="ig-cell" style="background:linear-gradient(135deg,#0e0e0e,#e8c06e);">
-                    <i class="fas fa-camera"></i>
-                </a>
-                <a href="https://instagram.com/lafashionpoint" target="_blank" rel="noopener" class="ig-cell" style="background:linear-gradient(135deg,#e8c06e,#1f1f1f);">
-                    <i class="fas fa-camera"></i>
-                </a>
-                <a href="https://instagram.com/lafashionpoint" target="_blank" rel="noopener" class="ig-cell" style="background:linear-gradient(135deg,#1f1f1f,#C9A84C);">
-                    <i class="fas fa-camera"></i>
-                </a>
-            </div>
-            <div style="text-align:center;margin-top:28px;">
-                <a href="https://instagram.com/lafashionpoint" target="_blank" rel="noopener" class="btn btn-gold">
-                    <i class="fab fa-instagram"></i> Follow on Instagram
-                </a>
-            </div>
-        </div>
-    </section>
-
-    <!-- ===== TESTIMONIALS ===== -->
-    <section class="section testimonials-section">
-        <div class="container">
-            <div class="section-header">
-                <p class="tag">Happy Customers</p>
-                <h2>What Our Customers Say</h2>
-            </div>
-            <div class="testimonials-carousel">
-                <button class="test-arrow prev" onclick="prevTestimonial()"><i class="fas fa-chevron-left"></i></button>
-                <div class="testimonials-track" id="testimonialsTrack"></div>
-                <button class="test-arrow next" onclick="nextTestimonial()"><i class="fas fa-chevron-right"></i></button>
-            </div>
-            <div class="test-dots" id="testDots"></div>
-        </div>
-    </section>
-
-    <!-- ===== FAQ ===== -->
-    <section id="faq" class="section faq-section">
-        <div class="container">
-            <div class="section-header">
-                <p class="tag">Got Questions?</p>
-                <h2>Frequently Asked Questions</h2>
-            </div>
-            <div class="faq-list">
-
-                <div class="faq-item">
-                    <button class="faq-question" onclick="toggleFaq(this)">
-                        <span>What sizes are available?</span>
-                        <i class="fas fa-chevron-down faq-chevron"></i>
-                    </button>
-                    <div class="faq-answer">
-                        <p>We stock S, M, L, XL, XXL and 3XL for most items. Jeans available in waist sizes 28-38. Check the Size Guide in each product for measurements.</p>
-                    </div>
-                </div>
-
-                <div class="faq-item">
-                    <button class="faq-question" onclick="toggleFaq(this)">
-                        <span>Do you deliver across India?</span>
-                        <i class="fas fa-chevron-down faq-chevron"></i>
-                    </button>
-                    <div class="faq-answer">
-                        <p>Yes! We ship to every corner of India. Delivery takes 3-7 business days depending on your location.</p>
-                    </div>
-                </div>
-
-                <div class="faq-item">
-                    <button class="faq-question" onclick="toggleFaq(this)">
-                        <span>How do I place an order?</span>
-                        <i class="fas fa-chevron-down faq-chevron"></i>
-                    </button>
-                    <div class="faq-answer">
-                        <p>Simply tap the WhatsApp button on any product, mention your size and colour, and we'll confirm your order within minutes.</p>
-                    </div>
-                </div>
-
-                <div class="faq-item">
-                    <button class="faq-question" onclick="toggleFaq(this)">
-                        <span>What payment methods do you accept?</span>
-                        <i class="fas fa-chevron-down faq-chevron"></i>
-                    </button>
-                    <div class="faq-answer">
-                        <p>We accept Cash on Delivery, UPI (GPay, PhonePe, Paytm), Razorpay, and Debit/Credit Cards.</p>
-                    </div>
-                </div>
-
-                <div class="faq-item">
-                    <button class="faq-question" onclick="toggleFaq(this)">
-                        <span>Can I return or exchange?</span>
-                        <i class="fas fa-chevron-down faq-chevron"></i>
-                    </button>
-                    <div class="faq-answer">
-                        <p>Yes, we accept returns/exchanges within 7 days. The product must be unused with tags intact. WhatsApp us to initiate.</p>
-                    </div>
-                </div>
-
-                <div class="faq-item">
-                    <button class="faq-question" onclick="toggleFaq(this)">
-                        <span>How do I use a discount coupon?</span>
-                        <i class="fas fa-chevron-down faq-chevron"></i>
-                    </button>
-                    <div class="faq-answer">
-                        <p>Share the coupon code on WhatsApp when placing your order and the discount will be applied.</p>
-                    </div>
-                </div>
-
-                <div class="faq-item">
-                    <button class="faq-question" onclick="toggleFaq(this)">
-                        <span>Are the colours true to the photos?</span>
-                        <i class="fas fa-chevron-down faq-chevron"></i>
-                    </button>
-                    <div class="faq-answer">
-                        <p>We try our best to show accurate colours. Minor variations may occur due to screen settings.</p>
-                    </div>
-                </div>
-
-                <div class="faq-item">
-                    <button class="faq-question" onclick="toggleFaq(this)">
-                        <span>How do I track my order?</span>
-                        <i class="fas fa-chevron-down faq-chevron"></i>
-                    </button>
-                    <div class="faq-answer">
-                        <p>Use our Order Tracker above — just enter your phone number to see your order status.</p>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-    </section>
-
-    <!-- ===== CONTACT ===== -->
-    <section id="contact" class="section contact-section">
-        <div class="container">
-            <div class="section-header">
-                <p class="tag">Get In Touch</p>
-                <h2>Order & Contact</h2>
-            </div>
-            <div class="contact-grid">
-
-                <div class="contact-info">
-                    <h3>Quick Order via WhatsApp</h3>
-                    <p>Tap below to instantly message us and place your order. We reply within minutes!</p>
-                    <a href="https://wa.me/919079661164" target="_blank" rel="noopener" class="wa-big-btn">
-                        <i class="fab fa-whatsapp"></i>
-                        <div>
-                            <strong>Chat on WhatsApp</strong>
-                            <small>+91 9079661164</small>
-                        </div>
-                    </a>
-                    <ul class="contact-list">
-                        <li><i class="fas fa-phone"></i><span>+91 9079661164</span></li>
-                        <li>
-                            <i class="fas fa-map-marker-alt"></i>
-                            <span>Village Khara Khera, Tehsil Tibbi<br>District Hanumangarh, Rajasthan<br><em>Near Water Works</em></span>
-                        </li>
-                        <li><i class="fas fa-shipping-fast"></i><span>Ships across all of India</span></li>
-                        <li><i class="fas fa-clock"></i><span>Orders accepted 24/7 via WhatsApp</span></li>
-                    </ul>
-                </div>
-
-                <div class="inquiry-form">
-                    <h3>Send an Inquiry</h3>
-                    <form id="contactForm" novalidate>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="fname">Your Name *</label>
-                                <input type="text" id="fname" name="name" placeholder="Rahul Sharma" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="fphone">Phone Number *</label>
-                                <input type="tel" id="fphone" name="phone" placeholder="+91 98765 43210" required>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="femail">Email (optional)</label>
-                            <input type="email" id="femail" name="email" placeholder="you@example.com">
-                        </div>
-                        <div class="form-group">
-                            <label for="fproduct">Product Interested In</label>
-                            <select id="fproduct" name="product">
-                                <option value="">— Select a product —</option>
-                                <option value="T-Shirt">T-Shirt</option>
-                                <option value="Shirt">Shirt</option>
-                                <option value="Hoodie">Hoodie</option>
-                                <option value="Jeans">Jeans</option>
-                                <option value="Multiple">Multiple items</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="fcoupon">Discount Coupon (optional)</label>
-                            <input type="text" id="fcoupon" name="coupon" placeholder="e.g. FIRST10">
-                        </div>
-                        <div class="form-group">
-                            <label for="fmsg">Message / Order Details</label>
-                            <textarea id="fmsg" name="message" rows="4" placeholder="Tell us your size, colour preference, quantity…"></textarea>
-                        </div>
-                        <button type="submit" class="btn btn-gold btn-full">
-                            <i class="fas fa-paper-plane"></i> Send Inquiry
-                        </button>
-                        <p class="form-note">We'll get back to you on WhatsApp within minutes.</p>
-                    </form>
-                    <div id="formSuccess" class="form-success" style="display:none;">
-                        <i class="fas fa-check-circle"></i>
-                        <p>Thank you! Your inquiry was received. We'll be in touch soon.</p>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-    </section>
-
-    <!-- ===== ORDER TRACKING ===== -->
-    <section id="track" class="section track-section">
-        <div class="container">
-            <div class="section-header">
-                <p class="tag">Your Orders</p>
-                <h2>Track Your Order</h2>
-                <p class="section-desc">Enter your phone number to see your order status</p>
-            </div>
-            <div class="track-form">
-                <div class="track-input-row">
-                    <input type="tel" id="trackPhone" placeholder="+91 98765 43210" maxlength="15">
-                    <button class="btn btn-gold" onclick="trackOrder()">
-                        <i class="fas fa-search"></i> Track
-                    </button>
-                </div>
-                <div id="trackResults" class="track-results" style="display:none;"></div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ===== GOOGLE MAP ===== -->
-    <section class="map-section">
-        <div class="container">
-            <div class="section-header">
-                <p class="tag">Find Us</p>
-                <h2>Our Location</h2>
-                <p class="section-desc">Village Khara Khera, Tehsil Tibbi, District Hanumangarh · Near Water Works</p>
-            </div>
-        </div>
-        <div class="map-wrapper">
-            <iframe
-                title="LaFashionPoint Location"
-                src="https://maps.google.com/maps?q=Khara+Khera+Tehsil+Tibbi+Hanumangarh+Rajasthan+India&output=embed&z=13"
-                width="100%"
-                height="420"
-                style="border:0;"
-                allowfullscreen=""
-                loading="lazy"
-                referrerpolicy="no-referrer-when-downgrade">
-            </iframe>
-            <div class="map-cta">
-                <a href="https://maps.app.goo.gl/v1M5ErcZovGwDLmf7" target="_blank" rel="noopener" class="btn btn-gold">
-                    <i class="fas fa-directions"></i> Get Directions
-                </a>
-            </div>
-        </div>
-    </section>
-
-    <!-- ===== FOOTER ===== -->
-    <footer class="footer">
-        <div class="container">
-            <div class="footer-grid">
-
-                <div class="footer-brand">
-                    <a href="#home">
-                        <img src="logo.png" alt="LaFashionPoint" class="footer-logo-img" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
-                        <span class="logo footer-logo" style="display:none;">La<span>Fashion</span>Point</span>
-                    </a>
-                    <p>Your trusted destination for premium men's fashion. Quality clothing delivered to your doorstep, anywhere in India.</p>
-                    <div class="footer-social">
-                        <a href="https://wa.me/919079661164" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a>
-                        <a href="https://instagram.com/lafashionpoint" target="_blank" rel="noopener" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
-                    </div>
-                </div>
-
-                <div class="footer-col">
-                    <h4>Quick Links</h4>
-                    <ul>
-                        <li><a href="#home">Home</a></li>
-                        <li><a href="#products">Products</a></li>
-                        <li><a href="#offers">Offers</a></li>
-                        <li><a href="#about">About Us</a></li>
-                        <li><a href="#track">Track Order</a></li>
-                        <li><a href="#faq">FAQ</a></li>
-                        <li><a href="#contact">Contact</a></li>
-                    </ul>
-                </div>
-
-                <div class="footer-col">
-                    <h4>Shop</h4>
-                    <ul>
-                        <li><a href="https://wa.me/919079661164?text=I%20want%20to%20order%20a%20T-Shirt" target="_blank" rel="noopener">T-Shirts</a></li>
-                        <li><a href="https://wa.me/919079661164?text=I%20want%20to%20order%20a%20Shirt"   target="_blank" rel="noopener">Shirts</a></li>
-                        <li><a href="https://wa.me/919079661164?text=I%20want%20to%20order%20a%20Hoodie" target="_blank" rel="noopener">Hoodies</a></li>
-                        <li><a href="https://wa.me/919079661164?text=I%20want%20to%20order%20Jeans"      target="_blank" rel="noopener">Jeans</a></li>
-                    </ul>
-                </div>
-
-                <div class="footer-col">
-                    <h4>Contact</h4>
-                    <ul class="footer-contact">
-                        <li><i class="fas fa-phone"></i> +91 9079661164</li>
-                        <li><i class="fab fa-whatsapp"></i> WhatsApp orders 24/7</li>
-                        <li><i class="fas fa-map-marker-alt"></i> Hanumangarh, Rajasthan</li>
-                        <li><i class="fas fa-truck"></i> Ships across India</li>
-                    </ul>
-                </div>
-
-            </div>
-            <div class="footer-bottom">
-                <p>&copy; 2025 LaFashionPoint. All rights reserved.</p>
-                <p>Made with <i class="fas fa-heart"></i> in India</p>
-            </div>
-        </div>
-    </footer>
-
-    <!-- Floating WhatsApp -->
-    <a href="https://wa.me/919079661164" target="_blank" rel="noopener" class="float-wa" title="Order on WhatsApp" aria-label="Order on WhatsApp">
-        <i class="fab fa-whatsapp"></i>
-    </a>
-
-    <!-- Back to Top -->
-    <button class="back-top" id="backTop" aria-label="Back to top">
-        <i class="fas fa-chevron-up"></i>
+  <div class="nav-icons">
+    <button class="nav-wishlist-btn" onclick="openWishlist()" title="My Wishlist" aria-label="Open wishlist">
+      <i class="far fa-heart"></i>
+      <span class="wishlist-count" id="wishlistCount" style="display:none;"></span>
     </button>
+    <a href="https://wa.me/919079661164" target="_blank" rel="noopener" class="nav-wa-btn" aria-label="Order on WhatsApp">
+      <i class="fab fa-whatsapp"></i> Order Now
+    </a>
+    <div class="hamburger" id="hamburger" onclick="toggleDrawer()">
+      <span></span><span></span><span></span>
+    </div>
+  </div>
+</nav>
 
-    <div id="toast" class="toast" role="alert" aria-live="polite"></div>
+<!-- MOBILE DRAWER -->
+<div class="overlay-bg" id="overlayBg" onclick="toggleDrawer()"></div>
+<div class="mobile-drawer" id="mobileDrawer">
+  <div class="drawer-close" onclick="toggleDrawer()">
+    <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </div>
+  <ul class="drawer-links">
+    <li><a href="#" onclick="toggleDrawer()">Home</a></li>
+    <li><a href="#products" onclick="toggleDrawer()">Products</a></li>
+    <li><a href="#offers" onclick="toggleDrawer()">Offers</a></li>
+    <li><a href="#about" onclick="toggleDrawer()">About</a></li>
+    <li><a href="#track" onclick="toggleDrawer()">Track Order</a></li>
+    <li><a href="#faq" onclick="toggleDrawer()">FAQ</a></li>
+    <li><a href="#contact" onclick="toggleDrawer()">Contact</a></li>
+  </ul>
+  <div class="footer-social">
+    <a href="https://wa.me/919079661164" target="_blank" rel="noopener" class="social-btn"><i class="fab fa-whatsapp"></i></a>
+    <a href="https://instagram.com/lafashionpoint" target="_blank" rel="noopener" class="social-btn"><i class="fab fa-instagram"></i></a>
+  </div>
+</div>
 
-    <!-- ===== PRODUCT DETAIL MODAL ===== -->
-    <div id="pdOverlay" class="pd-overlay" style="display:none;" onclick="if(event.target===this)closeProductModal()">
-        <div class="pd-box">
-            <button class="pd-close" onclick="closeProductModal()" aria-label="Close">
-                <i class="fas fa-times"></i>
-            </button>
+<!-- ===== HERO ===== -->
+<section class="hero" id="home">
+  <div class="hero-bg">
+    <div class="hero-shape hero-shape-1"></div>
+    <div class="hero-shape hero-shape-2"></div>
+  </div>
+  <div class="hero-content">
+    <div class="hero-eyebrow">Premium Men's Fashion — Hanumangarh, Rajasthan</div>
+    <h1 class="hero-headline">STYLE THAT<br>SPEAKS FOR <em>YOU</em></h1>
+    <p class="hero-sub">Premium T-Shirts · Shirts · Hoodies · Jeans — Delivered Across India</p>
+    <div class="hero-cta">
+      <a href="#products" class="btn-primary">Shop Collection</a>
+      <a href="https://wa.me/919079661164" target="_blank" rel="noopener" class="btn-wa-hero">
+        <i class="fab fa-whatsapp"></i> Order on WhatsApp
+      </a>
+    </div>
+  </div>
+  <div class="hero-scroll">
+    <div class="scroll-line"></div>
+    <span>Scroll</span>
+  </div>
+</section>
 
-            <!-- Image column -->
-            <div class="pd-image-col" id="pdImageCol">
-                <div class="pd-img-placeholder" id="pdImgPlaceholder" style="display:flex;">
-                    <i class="fas fa-tshirt"></i>
-                </div>
-                <!-- Carousel container -->
-                <div class="pd-carousel" id="pdCarousel" style="display:none;">
-                    <button class="pd-car-arrow left" onclick="changeModalImage(currentCarouselIdx - 1)"><i class="fas fa-chevron-left"></i></button>
-                    <img id="pdImg" src="" alt="" class="pd-car-main">
-                    <button class="pd-car-arrow right" onclick="changeModalImage(currentCarouselIdx + 1)"><i class="fas fa-chevron-right"></i></button>
-                    <div class="pd-car-thumbs" id="pdCarThumbs"></div>
-                </div>
-                <span class="pd-badge" id="pdBadge" style="display:none;"></span>
-            </div>
+<!-- ===== TICKER ===== -->
+<div class="ticker">
+  <div class="ticker-inner">
+    <span>Pan India Delivery</span>
+    <span>WhatsApp Orders 24/7</span>
+    <span>Premium Quality</span>
+    <span>Cash on Delivery</span>
+    <span>Free Exchange Policy</span>
+    <span>Pan India Delivery</span>
+    <span>WhatsApp Orders 24/7</span>
+    <span>Premium Quality</span>
+    <span>Cash on Delivery</span>
+    <span>Free Exchange Policy</span>
+    <span>Pan India Delivery</span>
+    <span>WhatsApp Orders 24/7</span>
+    <span>Premium Quality</span>
+    <span>Cash on Delivery</span>
+    <span>Free Exchange Policy</span>
+  </div>
+</div>
 
-            <!-- Details column -->
-            <div class="pd-details-col">
-                <div class="pd-category" id="pdCategory"></div>
-                <h2 class="pd-name" id="pdName"></h2>
+<!-- ===== CATEGORIES ===== -->
+<section class="categories">
+  <div class="section-label reveal">Shop by Category</div>
+  <h2 class="section-title reveal">WHAT ARE<br>YOU <em>LOOKING</em> FOR</h2>
+  <div class="categories-grid">
 
-                <div class="pd-price-row">
-                    <span class="pd-price" id="pdPrice"></span>
-                    <span class="pd-price-original" id="pdPriceOrig" style="display:none;"></span>
-                    <span class="pd-discount" id="pdDiscount" style="display:none;"></span>
-                </div>
-
-                <!-- Tabs: Details / Size Guide -->
-                <div class="pd-tabs">
-                    <button class="pd-tab active" data-tab="details" onclick="switchPdTab('details',this)">Details</button>
-                    <button class="pd-tab" data-tab="sizeguide" onclick="switchPdTab('sizeguide',this)">Size Guide</button>
-                </div>
-                <div id="pdTabDetails" class="pd-tab-content active">
-                    <p class="pd-desc" id="pdDesc"></p>
-                    <p class="pd-fabric" id="pdFabric" style="display:none;"></p>
-                </div>
-                <div id="pdTabSizeguide" class="pd-tab-content">
-                    <table class="size-guide-table" id="pdSizeTable"></table>
-                </div>
-
-                <!-- Size selector -->
-                <div>
-                    <p class="pd-section-label">Select Size *</p>
-                    <div class="pd-sizes" id="pdSizeBtns"></div>
-                </div>
-
-                <!-- Colour selector -->
-                <div>
-                    <p class="pd-section-label">Select Colour *</p>
-                    <div class="pd-colors" id="pdColorBtns"></div>
-                </div>
-
-                <button class="pd-order-btn" onclick="pdOrderNow()">
-                    <i class="fab fa-whatsapp"></i> Order on WhatsApp
-                </button>
-
-                <!-- Buy Now (Razorpay) -->
-                <button class="pd-buy-btn" onclick="buyNow()">
-                    <i class="fas fa-bolt"></i> Buy Now — Pay Online
-                </button>
-                <p class="pd-hint">Secure payment via Razorpay · UPI · Cards</p>
-
-                <p class="pd-hint">Your size &amp; colour will be included in the WhatsApp message</p>
-
-                <!-- Related Products -->
-                <div class="pd-related" id="pdRelated" style="display:none;">
-                    <h4 class="pd-related-title">You May Also Like</h4>
-                    <div class="pd-related-grid" id="pdRelatedGrid"></div>
-                </div>
-
-                <!-- Reviews Section -->
-                <div class="pd-reviews-section">
-                    <div class="pd-reviews-header">
-                        <h4>Customer Reviews</h4>
-                        <div class="pd-avg-rating" id="pdAvgRating"></div>
-                    </div>
-                    <div id="pdReviewsList"></div>
-                    <div class="pd-review-form">
-                        <h5>Write a Review</h5>
-                        <div class="star-input" id="starInput"></div>
-                        <input type="text" id="reviewName" placeholder="Your name">
-                        <textarea id="reviewComment" placeholder="Share your experience…" rows="3"></textarea>
-                        <button onclick="submitReview()" class="btn btn-gold btn-sm">Submit Review</button>
-                        <p class="review-thanks" id="reviewThanks" style="display:none;">Thank you! Your review is pending approval.</p>
-                    </div>
-                </div>
-            </div>
+    <div class="cat-card reveal" onclick="filterByCategory('Jeans')">
+      <div class="cat-bg cat-bg-jeans"></div>
+      <div class="cat-overlay"></div>
+      <div class="cat-body">
+        <div>
+          <div class="cat-name">Jeans</div>
+          <div class="cat-count">Premium Denim Collection</div>
         </div>
+        <div class="cat-arrow"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+      </div>
     </div>
 
-    <!-- ===== WISHLIST MODAL ===== -->
-    <div id="wishlistOverlay" class="wishlist-overlay" style="display:none;" onclick="if(event.target===this)closeWishlist()">
-        <div class="wishlist-box">
-            <div class="wishlist-header">
-                <h3><i class="fas fa-heart"></i> My Wishlist</h3>
-                <button class="wishlist-close" onclick="closeWishlist()"><i class="fas fa-times"></i></button>
-            </div>
-            <div id="wishlistContent" class="wishlist-content"></div>
+    <div class="cat-card reveal" onclick="filterByCategory('T-Shirt')">
+      <div class="cat-bg cat-bg-tshirts"></div>
+      <div class="cat-overlay"></div>
+      <div class="cat-body">
+        <div>
+          <div class="cat-name">T-Shirts</div>
+          <div class="cat-count">Everyday Comfort</div>
         </div>
+        <div class="cat-arrow"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+      </div>
     </div>
 
-    <!-- ===== COOKIE CONSENT BANNER ===== -->
-    <div id="cookieBanner" class="cookie-banner" style="display:none;">
-        <div class="cookie-content">
-            <i class="fas fa-cookie-bite"></i>
-            <p>We use cookies to improve your experience. By continuing to use this site, you agree to our use of cookies.</p>
+    <div class="cat-card reveal" onclick="filterByCategory('Shirt')">
+      <div class="cat-bg cat-bg-shirts"></div>
+      <div class="cat-overlay"></div>
+      <div class="cat-body">
+        <div>
+          <div class="cat-name">Shirts</div>
+          <div class="cat-count">Sharp &amp; Stylish</div>
         </div>
-        <div class="cookie-actions">
-            <button class="btn-cookie-accept" onclick="acceptCookies()">Accept</button>
-            <button class="btn-cookie-decline" onclick="declineCookies()">Decline</button>
-        </div>
+        <div class="cat-arrow"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+      </div>
     </div>
 
-    <script type="module" src="js/main.js"></script>
+    <div class="cat-card reveal" onclick="filterByCategory('Hoodie')">
+      <div class="cat-bg cat-bg-hoodies"></div>
+      <div class="cat-overlay"></div>
+      <div class="cat-body">
+        <div>
+          <div class="cat-name">Hoodies</div>
+          <div class="cat-count">Warm &amp; Premium</div>
+        </div>
+        <div class="cat-arrow"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ===== PRODUCTS ===== -->
+<section class="arrivals" id="products">
+  <div class="arrivals-header">
+    <div>
+      <div class="section-label reveal">Our Collection</div>
+      <h2 class="section-title reveal">NEW <em>ARRIVALS</em></h2>
+    </div>
+    <a href="https://wa.me/919079661164" target="_blank" rel="noopener" class="view-all reveal">Order on WhatsApp</a>
+  </div>
+
+  <!-- Search Bar -->
+  <div class="site-search-bar">
+    <i class="fas fa-search"></i>
+    <input type="text" id="siteSearch" placeholder="Search T-Shirts, Hoodies, Jeans…" oninput="handleSearch()">
+    <button id="searchClear" onclick="clearSearch()" style="display:none;"><i class="fas fa-times"></i></button>
+  </div>
+
+  <!-- Filter + Sort Row -->
+  <div class="products-filter-wrap">
+    <div class="cat-filter-row">
+      <button class="cat-filter-btn active" data-cat="">All</button>
+      <button class="cat-filter-btn" data-cat="T-Shirt">T-Shirts</button>
+      <button class="cat-filter-btn" data-cat="Shirt">Shirts</button>
+      <button class="cat-filter-btn" data-cat="Hoodie">Hoodies</button>
+      <button class="cat-filter-btn" data-cat="Jeans">Jeans</button>
+    </div>
+    <select class="sort-select" id="sortSelect">
+      <option value="">Sort: Default</option>
+      <option value="low">Price: Low to High</option>
+      <option value="high">Price: High to Low</option>
+    </select>
+  </div>
+
+  <!-- Loading -->
+  <div id="productsLoading" class="products-loading">
+    <div class="spinner"></div>
+    <p>Loading…</p>
+  </div>
+
+  <!-- Products Grid (filled by JS) -->
+  <div id="productsGrid" class="products-grid" style="display:none;"></div>
+
+  <!-- Empty State -->
+  <div id="productsEmpty" class="products-empty" style="display:none;">
+    <i class="fas fa-box-open"></i>
+    <p>No products found. Contact us on WhatsApp to order.</p>
+    <a href="https://wa.me/919079661164" target="_blank" rel="noopener" class="btn-primary" style="margin-top:16px;">
+      <i class="fab fa-whatsapp"></i> WhatsApp Us
+    </a>
+  </div>
+</section>
+
+<!-- ===== OFFERS / COUPONS ===== -->
+<section class="coupons-section" id="offers">
+  <div class="section-label reveal" style="color:rgba(255,255,255,.45);">Special Deals</div>
+  <h2 class="section-title reveal" style="color:white;">EXCLUSIVE <em style="color:var(--denim-light);">OFFERS</em></h2>
+  <!-- Coupons rendered by JS from Firestore -->
+  <div class="coupons-grid" id="couponsGrid"></div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ===== PROMO BANNER ===== -->
+<section class="promo">
+  <div class="promo-glow"></div>
+  <div class="promo-content">
+    <div class="promo-season reveal">Premium Quality 2026</div>
+    <h2 class="promo-title reveal">PREMIUM<br><span class="outline">MEN'S</span><br>FASHION</h2>
+    <p class="promo-desc reveal">From everyday T-Shirts to the perfect pair of Jeans — every piece is carefully chosen for quality, comfort, and style. Delivered to your door, anywhere in India.</p>
+    <a href="https://wa.me/919079661164" target="_blank" rel="noopener" class="btn-primary reveal"><i class="fab fa-whatsapp"></i> Order Now</a>
+  </div>
+  <div class="promo-number">26</div>
+</section>
+
+<!-- ===== BESTSELLERS CAROUSEL ===== -->
+<section class="bestsellers">
+  <div class="bestsellers-header">
+    <div>
+      <div class="section-label reveal">Customer Favourites</div>
+      <h2 class="section-title reveal">BEST <em>SELLERS</em></h2>
+    </div>
+    <div class="carousel-controls reveal">
+      <button class="carousel-btn" onclick="moveCarousel(-1)" aria-label="Previous">
+        <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      </button>
+      <button class="carousel-btn" onclick="moveCarousel(1)" aria-label="Next">
+        <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="carousel-track-wrap">
+    <div class="carousel-track" id="carouselTrack">
+      <div class="carousel-card product-card">
+        <div class="product-img-wrap">
+          <div class="product-img p-jeans"></div>
+          <div class="product-img-alt p-jeans" style="filter:brightness(.9)"></div>
+          <span class="product-badge best">Bestseller</span>
+          <button class="quick-add" onclick="window.open('https://wa.me/919079661164?text=Hi! I want to order Slim Fit Denim Jeans','_blank')">Order on WhatsApp</button>
+        </div>
+        <div class="product-info">
+          <p class="product-cat-sm">Jeans</p>
+          <div class="product-name">Slim Fit Denim Jeans</div>
+          <div class="product-pricing"><span class="product-price">₹1,199</span></div>
+          <div class="product-stars">★★★★★</div>
+        </div>
+      </div>
+      <div class="carousel-card product-card">
+        <div class="product-img-wrap">
+          <div class="product-img p-tshirt"></div>
+          <div class="product-img-alt p-tshirt" style="filter:brightness(.9)"></div>
+          <span class="product-badge new">New</span>
+          <button class="quick-add" onclick="window.open('https://wa.me/919079661164?text=Hi! I want to order a Premium Cotton T-Shirt','_blank')">Order on WhatsApp</button>
+        </div>
+        <div class="product-info">
+          <p class="product-cat-sm">T-Shirt</p>
+          <div class="product-name">Premium Cotton T-Shirt</div>
+          <div class="product-pricing"><span class="product-price">₹599</span></div>
+          <div class="product-stars">★★★★★</div>
+        </div>
+      </div>
+      <div class="carousel-card product-card">
+        <div class="product-img-wrap">
+          <div class="product-img p-hoodie"></div>
+          <div class="product-img-alt p-hoodie" style="filter:brightness(.9)"></div>
+          <span class="product-badge best">Bestseller</span>
+          <button class="quick-add" onclick="window.open('https://wa.me/919079661164?text=Hi! I want to order a Premium Hoodie','_blank')">Order on WhatsApp</button>
+        </div>
+        <div class="product-info">
+          <p class="product-cat-sm">Hoodie</p>
+          <div class="product-name">Premium Fleece Hoodie</div>
+          <div class="product-pricing"><span class="product-price">₹899</span></div>
+          <div class="product-stars">★★★★★</div>
+        </div>
+      </div>
+      <div class="carousel-card product-card">
+        <div class="product-img-wrap">
+          <div class="product-img p-shirt"></div>
+          <div class="product-img-alt p-shirt" style="filter:brightness(.9)"></div>
+          <span class="product-badge best">Bestseller</span>
+          <button class="quick-add" onclick="window.open('https://wa.me/919079661164?text=Hi! I want to order a Casual Shirt','_blank')">Order on WhatsApp</button>
+        </div>
+        <div class="product-info">
+          <p class="product-cat-sm">Shirt</p>
+          <div class="product-name">Classic Casual Shirt</div>
+          <div class="product-pricing"><span class="product-price">₹799</span></div>
+          <div class="product-stars">★★★★★</div>
+        </div>
+      </div>
+      <div class="carousel-card product-card">
+        <div class="product-img-wrap">
+          <div class="product-img p-jeans" style="filter:saturate(1.2)"></div>
+          <div class="product-img-alt p-jeans" style="filter:brightness(.85)"></div>
+          <span class="product-badge sale">−20%</span>
+          <button class="quick-add" onclick="window.open('https://wa.me/919079661164?text=Hi! I want to order Stretch Skinny Jeans','_blank')">Order on WhatsApp</button>
+        </div>
+        <div class="product-info">
+          <p class="product-cat-sm">Jeans</p>
+          <div class="product-name">Stretch Skinny Jeans</div>
+          <div class="product-pricing"><span class="product-price">₹999</span><span class="product-price-orig">₹1,249</span></div>
+          <div class="product-stars">★★★★☆</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ===== BRAND STORY ===== -->
+<section class="story" id="about">
+  <div class="story-grid">
+    <div class="story-img-stack reveal-left">
+      <div class="story-img-main"></div>
+      <div class="story-img-accent">
+        <div class="story-stat">
+          <div class="story-stat-num">500+</div>
+          <div class="story-stat-label">Happy Customers</div>
+        </div>
+      </div>
+      <div class="story-tag">Hanumangarh</div>
+    </div>
+    <div class="reveal-right">
+      <div class="section-label">Our Story</div>
+      <h2 class="section-title" style="font-size:clamp(40px,5vw,72px);margin-bottom:32px">ABOUT LA<br><em>FASHION</em><br>POINT</h2>
+      <p class="story-quote">Premium fashion for men who know what they want.</p>
+      <p class="story-body">We are a passionate men's fashion store rooted in Hanumangarh, Rajasthan. Our goal is simple — bring premium quality, trend-forward clothing to every man in India at prices that make sense. From everyday T-Shirts to stylish Hoodies and the perfect pair of Jeans, every piece in our collection is carefully chosen for quality, comfort, and style. With 500+ happy customers and growing, we are proud to serve all of India through WhatsApp orders and fast nationwide delivery.</p>
+      <a href="https://wa.me/919079661164" target="_blank" rel="noopener" class="btn-outline" style="display:inline-flex;align-items:center;gap:8px;margin-bottom:32px;"><i class="fab fa-whatsapp"></i> Chat With Us</a>
+      <div class="story-founder">
+        <div class="founder-avatar">L</div>
+        <div>
+          <div class="founder-name">LaFashionPoint Team</div>
+          <div class="founder-title">Hanumangarh, Rajasthan</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== REVIEWS ===== -->
+<section class="reviews">
+  <div style="text-align:center;margin-bottom:60px">
+    <div class="section-label reveal" style="justify-content:center">What Customers Say</div>
+    <h2 class="section-title reveal" style="text-align:center">REAL <em>REVIEWS</em></h2>
+  </div>
+  <!-- Reviews rendered by JS from Firestore; fallback static cards below -->
+  <div id="reviewsContainer" class="reviews-grid">
+    <div class="review-card reveal">
+      <div class="review-verified">✓ Verified</div>
+      <div class="review-stars">★★★★★</div>
+      <p class="review-text">Quality is genuinely impressive for the price. The jeans fit perfectly and the stitching is solid. Already ordered again.</p>
+      <div class="review-author">
+        <div class="review-avatar">R</div>
+        <div>
+          <div class="review-name">Rahul Sharma</div>
+          <div class="review-location">Jaipur, Rajasthan</div>
+        </div>
+      </div>
+    </div>
+    <div class="review-card reveal">
+      <div class="review-verified">✓ Verified</div>
+      <div class="review-stars">★★★★★</div>
+      <p class="review-text">Fast delivery and great packaging. The hoodie is super warm and the colour is exactly as shown. Will order again!</p>
+      <div class="review-author">
+        <div class="review-avatar">V</div>
+        <div>
+          <div class="review-name">Vikram Singh</div>
+          <div class="review-location">Delhi, NCR</div>
+        </div>
+      </div>
+    </div>
+    <div class="review-card reveal">
+      <div class="review-verified">✓ Verified</div>
+      <div class="review-stars">★★★★★</div>
+      <p class="review-text">Best menswear store for this price range. Local store but ships all over India. Very proud to support local business!</p>
+      <div class="review-author">
+        <div class="review-avatar">S</div>
+        <div>
+          <div class="review-name">Sunil Gupta</div>
+          <div class="review-location">Hanumangarh, Rajasthan</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ===== INSTAGRAM ===== -->
+<section class="insta">
+  <div style="text-align:center;margin-bottom:50px">
+    <div class="section-label reveal" style="justify-content:center">Follow Along</div>
+    <h2 class="section-title reveal" style="text-align:center;font-size:clamp(32px,4.5vw,64px)">@LAFASHIONPOINT</h2>
+  </div>
+  <div class="insta-grid">
+    <a href="https://instagram.com/lafashionpoint" target="_blank" rel="noopener" class="insta-item reveal">
+      <div class="insta-bg i1"></div>
+      <div class="insta-overlay"><div class="insta-icon"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.5" fill="white"/></svg></div></div>
+    </a>
+    <a href="https://instagram.com/lafashionpoint" target="_blank" rel="noopener" class="insta-item reveal">
+      <div class="insta-bg i2"></div>
+      <div class="insta-overlay"><div class="insta-icon"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.5" fill="white"/></svg></div></div>
+    </a>
+    <a href="https://instagram.com/lafashionpoint" target="_blank" rel="noopener" class="insta-item reveal">
+      <div class="insta-bg i3"></div>
+      <div class="insta-overlay"><div class="insta-icon"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.5" fill="white"/></svg></div></div>
+    </a>
+    <a href="https://instagram.com/lafashionpoint" target="_blank" rel="noopener" class="insta-item reveal">
+      <div class="insta-bg i4"></div>
+      <div class="insta-overlay"><div class="insta-icon"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.5" fill="white"/></svg></div></div>
+    </a>
+    <a href="https://instagram.com/lafashionpoint" target="_blank" rel="noopener" class="insta-item reveal">
+      <div class="insta-bg i5"></div>
+      <div class="insta-overlay"><div class="insta-icon"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.5" fill="white"/></svg></div></div>
+    </a>
+    <a href="https://instagram.com/lafashionpoint" target="_blank" rel="noopener" class="insta-item reveal">
+      <div class="insta-bg i6"></div>
+      <div class="insta-overlay"><div class="insta-icon"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.5" fill="white"/></svg></div></div>
+    </a>
+  </div>
+</section>
+
+<!-- ===== TESTIMONIALS ===== -->
+<section class="testimonials-section">
+  <div style="text-align:center;margin-bottom:56px;">
+    <div class="section-label reveal" style="justify-content:center;">Happy Customers</div>
+    <h2 class="section-title reveal" style="text-align:center;font-size:clamp(36px,5vw,72px);">WHAT THEY <em>SAY</em></h2>
+  </div>
+  <div class="testimonials-carousel">
+    <button class="test-arrow prev" onclick="prevTestimonial()"><i class="fas fa-chevron-left"></i></button>
+    <div class="testimonials-track" id="testimonialsTrack"></div>
+    <button class="test-arrow next" onclick="nextTestimonial()"><i class="fas fa-chevron-right"></i></button>
+  </div>
+  <div class="test-dots" id="testDots"></div>
+</section>
+
+<!-- ===== FAQ ===== -->
+<section class="faq-section" id="faq">
+  <div style="text-align:center;margin-bottom:56px;">
+    <div class="section-label reveal" style="justify-content:center;">Got Questions?</div>
+    <h2 class="section-title reveal" style="text-align:center;font-size:clamp(36px,5vw,72px);">FREQUENTLY ASKED <em>QUESTIONS</em></h2>
+  </div>
+  <div class="faq-list">
+
+    <div class="faq-item">
+      <button class="faq-question" onclick="toggleFaq(this)">
+        <span>What sizes are available?</span>
+        <i class="fas fa-chevron-down faq-chevron"></i>
+      </button>
+      <div class="faq-answer">
+        <p>We stock S, M, L, XL, XXL and 3XL for most items. Jeans are available in waist sizes 28–38. Check the Size Guide in each product for exact measurements.</p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-question" onclick="toggleFaq(this)">
+        <span>Do you deliver across India?</span>
+        <i class="fas fa-chevron-down faq-chevron"></i>
+      </button>
+      <div class="faq-answer">
+        <p>Yes! We ship to every corner of India. Delivery takes 3–7 business days depending on your location.</p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-question" onclick="toggleFaq(this)">
+        <span>How do I place an order on WhatsApp?</span>
+        <i class="fas fa-chevron-down faq-chevron"></i>
+      </button>
+      <div class="faq-answer">
+        <p>Simply tap the WhatsApp button on any product or click "Order Now" in the navigation, mention the product name, size, and colour — we'll confirm your order within minutes.</p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-question" onclick="toggleFaq(this)">
+        <span>What payment methods do you accept?</span>
+        <i class="fas fa-chevron-down faq-chevron"></i>
+      </button>
+      <div class="faq-answer">
+        <p>We accept Cash on Delivery, UPI (GPay, PhonePe, Paytm), Razorpay, and Debit/Credit Cards.</p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-question" onclick="toggleFaq(this)">
+        <span>What is your return and exchange policy?</span>
+        <i class="fas fa-chevron-down faq-chevron"></i>
+      </button>
+      <div class="faq-answer">
+        <p>We offer free exchange within 7 days of delivery. Product must be unused with tags intact. WhatsApp us to initiate a return or exchange — no questions asked.</p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-question" onclick="toggleFaq(this)">
+        <span>Are the colours true to the photos?</span>
+        <i class="fas fa-chevron-down faq-chevron"></i>
+      </button>
+      <div class="faq-answer">
+        <p>We try our best to show accurate colours. Minor variations may occur due to screen settings. All colours mentioned are available — ask on WhatsApp for samples.</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ===== CONTACT ===== -->
+<section class="contact-section" id="contact">
+  <div style="text-align:center;margin-bottom:56px;">
+    <div class="section-label reveal" style="justify-content:center;">Get In Touch</div>
+    <h2 class="section-title reveal" style="text-align:center;font-size:clamp(36px,5vw,72px);">ORDER &amp; <em>CONTACT</em></h2>
+  </div>
+  <div class="contact-grid">
+
+    <div class="contact-info">
+      <h3>Quick Order via WhatsApp</h3>
+      <p>Tap below to instantly message us and place your order. We reply within minutes!</p>
+      <a href="https://wa.me/919079661164" target="_blank" rel="noopener" class="wa-big-btn">
+        <i class="fab fa-whatsapp"></i>
+        <div>
+          <strong>Chat on WhatsApp</strong>
+          <small>+91 9079661164</small>
+        </div>
+      </a>
+      <ul class="contact-list">
+        <li><i class="fas fa-phone"></i><span>+91 9079661164</span></li>
+        <li>
+          <i class="fas fa-map-marker-alt"></i>
+          <span>Village Khara Khera, Tehsil Tibbi<br>District Hanumangarh, Rajasthan<br><em>Near Water Works</em></span>
+        </li>
+        <li><i class="fas fa-shipping-fast"></i><span>Ships across all of India</span></li>
+        <li><i class="fas fa-clock"></i><span>Orders accepted 24/7 via WhatsApp</span></li>
+      </ul>
+    </div>
+
+    <div class="inquiry-form">
+      <h3>Send an Inquiry</h3>
+      <form id="contactForm" novalidate>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="fname">Your Name *</label>
+            <input type="text" id="fname" name="name" placeholder="Rahul Sharma" required>
+          </div>
+          <div class="form-group">
+            <label for="fphone">Phone Number *</label>
+            <input type="tel" id="fphone" name="phone" placeholder="+91 98765 43210" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="femail">Email (optional)</label>
+          <input type="email" id="femail" name="email" placeholder="you@example.com">
+        </div>
+        <div class="form-group">
+          <label for="fproduct">Product Interested In</label>
+          <select id="fproduct" name="product">
+            <option value="">— Select a product —</option>
+            <option value="T-Shirt">T-Shirt</option>
+            <option value="Shirt">Shirt</option>
+            <option value="Hoodie">Hoodie</option>
+            <option value="Jeans">Jeans</option>
+            <option value="Multiple">Multiple items</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="fcoupon">Discount Coupon (optional)</label>
+          <input type="text" id="fcoupon" name="coupon" placeholder="e.g. FIRST10">
+        </div>
+        <div class="form-group">
+          <label for="fmsg">Message / Order Details</label>
+          <textarea id="fmsg" name="message" rows="4" placeholder="Tell us your size, colour preference, quantity…"></textarea>
+        </div>
+        <button type="submit" class="btn-gold btn-full">
+          <i class="fas fa-paper-plane"></i> Send Inquiry
+        </button>
+        <p class="form-note">We'll get back to you on WhatsApp within minutes.</p>
+      </form>
+      <div id="formSuccess" class="form-success" style="display:none;">
+        <i class="fas fa-check-circle"></i>
+        <p>Thank you! Your inquiry was received. We'll be in touch soon.</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ===== ORDER TRACKING ===== -->
+<section class="track-section" id="track">
+  <div style="text-align:center;margin-bottom:56px;">
+    <div class="section-label reveal" style="justify-content:center;">Your Orders</div>
+    <h2 class="section-title reveal" style="text-align:center;font-size:clamp(36px,5vw,72px);">TRACK YOUR <em>ORDER</em></h2>
+    <p class="section-desc" style="color:var(--ink-mid);max-width:480px;margin:16px auto 0;">Enter your phone number to see your order status</p>
+  </div>
+  <div class="track-form">
+    <div class="track-input-row">
+      <input type="tel" id="trackPhone" placeholder="+91 98765 43210" maxlength="15">
+      <button class="track-btn" onclick="trackOrder()">
+        <i class="fas fa-search"></i> Track
+      </button>
+    </div>
+    <div id="trackResults" class="track-results" style="display:none;"></div>
+  </div>
+</section>
+
+<!-- ===== GOOGLE MAP ===== -->
+<section class="map-section">
+  <div class="container">
+    <div class="section-header">
+      <p class="tag">Find Us</p>
+      <h2 style="font-family:var(--ff-display);letter-spacing:0.04em;">OUR LOCATION</h2>
+      <p class="section-desc">Village Khara Khera, Tehsil Tibbi, District Hanumangarh · Near Water Works</p>
+    </div>
+  </div>
+  <div class="map-wrapper">
+    <iframe
+      title="LaFashionPoint Location"
+      src="https://maps.google.com/maps?q=Khara+Khera+Tehsil+Tibbi+Hanumangarh+Rajasthan+India&output=embed&z=13"
+      width="100%" height="420" style="border:0;" allowfullscreen="" loading="lazy"
+      referrerpolicy="no-referrer-when-downgrade">
+    </iframe>
+    <div class="map-cta">
+      <a href="https://maps.app.goo.gl/v1M5ErcZovGwDLmf7" target="_blank" rel="noopener" class="btn-primary">
+        <i class="fas fa-directions"></i> Get Directions
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer class="footer">
+  <div class="footer-newsletter">
+    <div class="newsletter-text">
+      <div class="newsletter-title">GET 10% OFF<br>YOUR FIRST ORDER</div>
+      <div class="newsletter-sub">Share your email with <strong>LA Fashion Point</strong> — we'll send exclusive deals.</div>
+    </div>
+    <div class="newsletter-form">
+      <input type="email" class="newsletter-input" placeholder="Enter your email address">
+      <button class="newsletter-btn">Subscribe</button>
+    </div>
+  </div>
+
+  <div class="footer-main">
+    <div class="footer-brand">
+      <span class="nav-logo">LA <span>FASHION</span> POINT</span>
+      <p>Premium men's fashion from Hanumangarh, Rajasthan. Quality clothing delivered to your doorstep, anywhere in India. WhatsApp orders 24/7.</p>
+      <div class="footer-social">
+        <a href="https://wa.me/919079661164" target="_blank" rel="noopener" class="social-btn" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+        <a href="https://instagram.com/lafashionpoint" target="_blank" rel="noopener" class="social-btn" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+      </div>
+    </div>
+
+    <div class="footer-col">
+      <h4>Quick Links</h4>
+      <ul>
+        <li><a href="#">Home</a></li>
+        <li><a href="#products">Products</a></li>
+        <li><a href="#offers">Offers</a></li>
+        <li><a href="#about">About Us</a></li>
+        <li><a href="#track">Track Order</a></li>
+        <li><a href="#faq">FAQ</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-col">
+      <h4>Shop</h4>
+      <ul>
+        <li><a href="https://wa.me/919079661164?text=I%20want%20to%20order%20a%20T-Shirt" target="_blank" rel="noopener">T-Shirts</a></li>
+        <li><a href="https://wa.me/919079661164?text=I%20want%20to%20order%20a%20Shirt" target="_blank" rel="noopener">Shirts</a></li>
+        <li><a href="https://wa.me/919079661164?text=I%20want%20to%20order%20a%20Hoodie" target="_blank" rel="noopener">Hoodies</a></li>
+        <li><a href="https://wa.me/919079661164?text=I%20want%20to%20order%20Jeans" target="_blank" rel="noopener">Jeans</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-col">
+      <h4>Contact</h4>
+      <ul class="footer-contact">
+        <li><i class="fas fa-phone"></i> +91 9079661164</li>
+        <li><i class="fab fa-whatsapp"></i> WhatsApp orders 24/7</li>
+        <li><i class="fas fa-map-marker-alt"></i> Hanumangarh, Rajasthan</li>
+        <li><i class="fas fa-truck"></i> Ships across India</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <p>&copy; 2026 LA Fashion Point. All rights reserved.</p>
+    <div class="footer-payment">
+      <div class="payment-badge">UPI</div>
+      <div class="payment-badge">Visa</div>
+      <div class="payment-badge">Mastercard</div>
+      <div class="payment-badge">PayTM</div>
+      <div class="payment-badge">COD</div>
+    </div>
+  </div>
+</footer>
+
+<!-- ===== PRODUCT DETAIL MODAL ===== -->
+<div id="pdOverlay" class="pd-overlay" style="display:none;" onclick="if(event.target===this)closeProductModal()">
+  <div class="pd-box">
+    <button class="pd-close" onclick="closeProductModal()" aria-label="Close"><i class="fas fa-times"></i></button>
+
+    <!-- Image column -->
+    <div class="pd-image-col" id="pdImageCol">
+      <div class="pd-img-placeholder" id="pdImgPlaceholder" style="display:flex;">
+        <i class="fas fa-tshirt"></i>
+      </div>
+      <div class="pd-carousel" id="pdCarousel" style="display:none;">
+        <button class="pd-car-arrow left" onclick="changeModalImage(currentCarouselIdx - 1)"><i class="fas fa-chevron-left"></i></button>
+        <img id="pdImg" src="" alt="" class="pd-car-main">
+        <button class="pd-car-arrow right" onclick="changeModalImage(currentCarouselIdx + 1)"><i class="fas fa-chevron-right"></i></button>
+        <div class="pd-car-thumbs" id="pdCarThumbs"></div>
+      </div>
+      <span class="pd-badge" id="pdBadge" style="display:none;"></span>
+    </div>
+
+    <!-- Details column -->
+    <div class="pd-details-col">
+      <div class="pd-category" id="pdCategory"></div>
+      <h2 class="pd-name" id="pdName"></h2>
+
+      <div class="pd-price-row">
+        <span class="pd-price" id="pdPrice"></span>
+        <span class="pd-price-original" id="pdPriceOrig" style="display:none;"></span>
+        <span class="pd-discount" id="pdDiscount" style="display:none;"></span>
+      </div>
+
+      <div class="pd-tabs">
+        <button class="pd-tab active" data-tab="details" onclick="switchPdTab('details',this)">Details</button>
+        <button class="pd-tab" data-tab="sizeguide" onclick="switchPdTab('sizeguide',this)">Size Guide</button>
+      </div>
+      <div id="pdTabDetails" class="pd-tab-content active">
+        <p class="pd-desc" id="pdDesc"></p>
+        <p class="pd-fabric" id="pdFabric" style="display:none;"></p>
+      </div>
+      <div id="pdTabSizeguide" class="pd-tab-content">
+        <table class="size-guide-table" id="pdSizeTable"></table>
+      </div>
+
+      <div>
+        <p class="pd-section-label">Select Size *</p>
+        <div class="pd-sizes" id="pdSizeBtns"></div>
+      </div>
+
+      <div>
+        <p class="pd-section-label">Select Colour *</p>
+        <div class="pd-colors" id="pdColorBtns"></div>
+      </div>
+
+      <button class="pd-order-btn" onclick="pdOrderNow()">
+        <i class="fab fa-whatsapp"></i> Order on WhatsApp
+      </button>
+
+      <button class="pd-buy-btn" onclick="buyNow()">
+        <i class="fas fa-bolt"></i> Buy Now — Pay Online
+      </button>
+      <p class="pd-hint">Secure payment via Razorpay · UPI · Cards</p>
+      <p class="pd-hint">Your size &amp; colour will be included in the WhatsApp message</p>
+
+      <!-- Related Products -->
+      <div class="pd-related" id="pdRelated" style="display:none;">
+        <h4 class="pd-related-title">You May Also Like</h4>
+        <div class="pd-related-grid" id="pdRelatedGrid"></div>
+      </div>
+
+      <!-- Reviews Section -->
+      <div class="pd-reviews-section">
+        <div class="pd-reviews-header">
+          <h4>Customer Reviews</h4>
+          <div class="pd-avg-rating" id="pdAvgRating"></div>
+        </div>
+        <div id="pdReviewsList"></div>
+        <div class="pd-review-form">
+          <h5>Write a Review</h5>
+          <div class="star-input" id="starInput"></div>
+          <input type="text" id="reviewName" placeholder="Your name">
+          <textarea id="reviewComment" placeholder="Share your experience…" rows="3"></textarea>
+          <button onclick="submitReview()" class="btn-gold btn-sm">Submit Review</button>
+          <p class="review-thanks" id="reviewThanks" style="display:none;">Thank you! Your review is pending approval.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== WISHLIST PANEL ===== -->
+<div id="wishlistOverlay" class="wishlist-overlay" style="display:none;" onclick="if(event.target===this)closeWishlist()">
+  <div class="wishlist-box">
+    <div class="wishlist-header">
+      <h3><i class="fas fa-heart"></i> My Wishlist</h3>
+      <button class="wishlist-close" onclick="closeWishlist()"><i class="fas fa-times"></i></button>
+    </div>
+    <div id="wishlistContent" class="wishlist-content"></div>
+  </div>
+</div>
+
+<!-- ===== COOKIE CONSENT BANNER ===== -->
+<div id="cookieBanner" class="cookie-banner" style="display:none;">
+  <div class="cookie-content">
+    <i class="fas fa-cookie-bite"></i>
+    <p>We use cookies to improve your experience. By continuing to use this site, you agree to our use of cookies.</p>
+  </div>
+  <div class="cookie-actions">
+    <button class="btn-cookie-accept" onclick="acceptCookies()">Accept</button>
+    <button class="btn-cookie-decline" onclick="declineCookies()">Decline</button>
+  </div>
+</div>
+
+<!-- ===== FLOATING WHATSAPP ===== -->
+<a href="https://wa.me/919079661164" target="_blank" rel="noopener" class="float-wa" title="Order on WhatsApp" aria-label="Order on WhatsApp">
+  <i class="fab fa-whatsapp"></i>
+</a>
+
+<!-- ===== BACK TO TOP ===== -->
+<button class="back-top" id="backTop" aria-label="Back to top">
+  <i class="fas fa-chevron-up"></i>
+</button>
+
+<!-- ===== TOAST ===== -->
+<div id="toast" class="toast" role="alert" aria-live="polite"></div>
+
+<script type="module" src="js/main.js"></script>
 </body>
 </html>
