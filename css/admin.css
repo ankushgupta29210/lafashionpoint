@@ -275,6 +275,8 @@ input, select, textarea {
 /* -- Content Sections -- */
 .content-section { display: none; padding: 24px; flex: 1; }
 .content-section.active { display: block; }
+/* POS needs flex, not block, to fill the viewport correctly */
+.content-section.active.pos-section { display: flex; }
 
 /* ============================================================
    PRODUCTS LIST
@@ -1164,17 +1166,25 @@ input:checked + .slider::before { transform: translateX(20px); }
 .pos-section {
     padding: 0 !important;
     height: calc(100vh - 60px);
+    max-height: calc(100vh - 60px);
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    flex-shrink: 0;
 }
 
 .pos-layout {
     display: grid;
     grid-template-columns: 1fr 340px;
     flex: 1;
+    height: 100%;
     overflow: hidden;
+    min-height: 0; /* prevent flex child from overflowing parent */
 }
+
+/* Lock page scroll while POS is the active section */
+body.pos-active { overflow: hidden; }
+body.pos-active .main-wrap { overflow: hidden; }
 
 /* ── Catalog ── */
 .pos-catalog {

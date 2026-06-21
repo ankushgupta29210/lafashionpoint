@@ -113,6 +113,8 @@ window.showSection = name => {
         n.classList.toggle('active', n.dataset.section === name);
     });
     document.getElementById('pageTitle').textContent = TITLES[name] || '';
+    /* Lock body scroll in POS so other sections can't bleed through */
+    document.body.classList.toggle('pos-active', name === 'pos');
     closeSidebar();
 };
 
