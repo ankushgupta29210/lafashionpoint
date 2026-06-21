@@ -59,6 +59,9 @@
             <a href="#" class="nav-item active" data-section="products" onclick="showSection('products')">
                 <i class="fas fa-box"></i> Products
             </a>
+            <a href="#" class="nav-item" data-section="categories" onclick="showSection('categories')">
+                <i class="fas fa-tags"></i> Categories
+            </a>
             <a href="#" class="nav-item" data-section="inquiries" onclick="showSection('inquiries')">
                 <i class="fas fa-envelope"></i> Inquiries
                 <span class="badge-count" id="inquiryCount" style="display:none;">0</span>
@@ -174,10 +177,7 @@
                                 <label>Category *</label>
                                 <select id="pCategory" required>
                                     <option value="">Select…</option>
-                                    <option>T-Shirt</option>
-                                    <option>Shirt</option>
-                                    <option>Hoodie</option>
-                                    <option>Jeans</option>
+                                    <!-- Populated from Firestore categories -->
                                 </select>
                             </div>
                             <div class="field">
@@ -375,6 +375,94 @@
             </div>
         </section>
 
+        <!-- ── CATEGORIES SECTION ── -->
+        <section id="sectionCategories" class="content-section">
+            <div class="section-toolbar">
+                <div class="toolbar-left">
+                    <input type="text" id="searchCategories" class="search-box" placeholder="Search categories…" oninput="filterCategoriesTable()">
+                </div>
+                <button class="btn-add" onclick="openCategoryForm()"><i class="fas fa-plus"></i> Add Category</button>
+            </div>
+            <div id="categoriesList">
+                <div class="list-loading"><i class="fas fa-spinner fa-spin"></i> Loading categories…</div>
+            </div>
+            <div class="settings-card" style="margin-top:20px;">
+                <h3><i class="fas fa-info-circle"></i> How categories work</h3>
+                <p>The <strong>Name</strong> field must exactly match what you type when assigning a product's category (e.g. <code>Kids</code>). Adding a new category here automatically updates the product form dropdown, POS filter tabs, and the website's filter bar and category grid.</p>
+            </div>
+        </section>
+
+        <!-- ── CATEGORY FORM ── -->
+        <section id="sectionCategoryForm" class="content-section">
+            <div class="form-header">
+                <button class="btn-back" onclick="showSection('categories')"><i class="fas fa-arrow-left"></i> Back</button>
+                <h3 id="categoryFormTitle">Add Category</h3>
+            </div>
+            <form id="categoryForm" class="product-form" style="max-width:560px;" onsubmit="saveCategory(event)">
+                <input type="hidden" id="editCategoryId">
+
+                <div class="field">
+                    <label>Category Name * <span class="field-hint" style="font-weight:400;">(used in products — must match exactly)</span></label>
+                    <input type="text" id="catName" placeholder="e.g. Kids" required>
+                    <small class="field-hint">Keep it short: T-Shirt, Kids, Ethnic Wear, etc.</small>
+                </div>
+
+                <div class="field">
+                    <label>Display Label</label>
+                    <input type="text" id="catLabel" placeholder="e.g. Kids Wear">
+                    <small class="field-hint">What customers see. Defaults to Name if blank.</small>
+                </div>
+
+                <div class="field">
+                    <label>Subtitle / Description</label>
+                    <input type="text" id="catDesc" placeholder="e.g. Children's Fashion">
+                </div>
+
+                <div class="field">
+                    <label>Icon (Font Awesome class)</label>
+                    <input type="text" id="catIcon" placeholder="e.g. fas fa-child">
+                    <small class="field-hint">Find icons at <strong>fontawesome.com/icons</strong> — copy the class name</small>
+                </div>
+
+                <div class="field">
+                    <label>Background Color for Category Card</label>
+                    <div class="cat-color-presets">
+                        <button type="button" class="color-preset" data-color="#c8d8ec" style="background:linear-gradient(135deg,#c8d8ec,#7aa3c4)" title="Denim Blue" onclick="selectCatColor('#c8d8ec',this)"></button>
+                        <button type="button" class="color-preset" data-color="#e0e0e0" style="background:linear-gradient(135deg,#e0e0e0,#c8c8c8)" title="Light Grey" onclick="selectCatColor('#e0e0e0',this)"></button>
+                        <button type="button" class="color-preset" data-color="#c8d4d0" style="background:linear-gradient(135deg,#c8d4d0,#9eb8b0)" title="Sage Green" onclick="selectCatColor('#c8d4d0',this)"></button>
+                        <button type="button" class="color-preset" data-color="#d4cce0" style="background:linear-gradient(135deg,#d4cce0,#b8aed0)" title="Lavender" onclick="selectCatColor('#d4cce0',this)"></button>
+                        <button type="button" class="color-preset" data-color="#ddd8c8" style="background:linear-gradient(135deg,#ddd8c8,#c4bca8)" title="Warm Beige" onclick="selectCatColor('#ddd8c8',this)"></button>
+                        <button type="button" class="color-preset" data-color="#f5c6d0" style="background:linear-gradient(135deg,#f5c6d0,#e8a0b0)" title="Blush Pink" onclick="selectCatColor('#f5c6d0',this)"></button>
+                        <button type="button" class="color-preset" data-color="#fde68a" style="background:linear-gradient(135deg,#fde68a,#f59e0b)" title="Gold" onclick="selectCatColor('#fde68a',this)"></button>
+                        <button type="button" class="color-preset" data-color="#a7f3d0" style="background:linear-gradient(135deg,#a7f3d0,#34d399)" title="Mint" onclick="selectCatColor('#a7f3d0',this)"></button>
+                    </div>
+                    <input type="text" id="catColor" placeholder="#c8d8ec" style="margin-top:8px;">
+                    <small class="field-hint">Hex color shown as background on website category card</small>
+                </div>
+
+                <div class="field">
+                    <label>Display Order</label>
+                    <input type="number" id="catOrder" placeholder="5" min="1" step="1" value="99">
+                    <small class="field-hint">Lower number = appears first</small>
+                </div>
+
+                <div class="toggle-row">
+                    <label>Active (show on website &amp; filters)</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="catActive" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="form-actions" style="margin-top:16px;">
+                    <button type="button" class="btn-cancel" onclick="showSection('categories')">Cancel</button>
+                    <button type="submit" class="btn-save" id="saveCategoryBtn">
+                        <i class="fas fa-save"></i> Save Category
+                    </button>
+                </div>
+            </form>
+        </section>
+
         <!-- ── POS SECTION ── -->
         <section id="sectionPos" class="content-section pos-section">
             <div class="pos-layout">
@@ -388,12 +476,9 @@
                                 <i class="fas fa-barcode"></i>
                             </button>
                         </div>
-                        <div class="pos-cat-tabs">
+                        <div class="pos-cat-tabs" id="posCatTabs">
                             <button class="pos-cat active" onclick="setPosCategory(this,'')">All</button>
-                            <button class="pos-cat" onclick="setPosCategory(this,'T-Shirt')">T-Shirts</button>
-                            <button class="pos-cat" onclick="setPosCategory(this,'Shirt')">Shirts</button>
-                            <button class="pos-cat" onclick="setPosCategory(this,'Hoodie')">Hoodies</button>
-                            <button class="pos-cat" onclick="setPosCategory(this,'Jeans')">Jeans</button>
+                            <!-- Populated from Firestore categories -->
                         </div>
                     </div>
                     <div class="pos-products" id="posProductsGrid">
@@ -676,6 +761,10 @@ service cloud.firestore {
       allow read, write: if request.auth != null;
     }
     match /coupons/{id} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /categories/{id} {
       allow read: if true;
       allow write: if request.auth != null;
     }

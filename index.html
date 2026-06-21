@@ -126,56 +126,11 @@
 <section class="categories">
   <div class="section-label reveal">Shop by Category</div>
   <h2 class="section-title reveal">WHAT ARE<br>YOU <em>LOOKING</em> FOR</h2>
-  <div class="categories-grid">
-
-    <div class="cat-card reveal" onclick="filterByCategory('Jeans')">
-      <div class="cat-bg cat-bg-jeans"></div>
-      <div class="cat-overlay"></div>
-      <div class="cat-body">
-        <div>
-          <div class="cat-name">Jeans</div>
-          <div class="cat-count">Premium Denim Collection</div>
-        </div>
-        <div class="cat-arrow"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
-      </div>
+  <!-- Populated from Firestore categories (falls back to defaults) -->
+  <div class="categories-grid" id="categoriesGrid">
+    <div class="cat-card" style="background:#eef1f5;display:flex;align-items:center;justify-content:center;min-height:200px;">
+      <i class="fas fa-spinner fa-spin" style="color:#2a4a6b;font-size:2rem;"></i>
     </div>
-
-    <div class="cat-card reveal" onclick="filterByCategory('T-Shirt')">
-      <div class="cat-bg cat-bg-tshirts"></div>
-      <div class="cat-overlay"></div>
-      <div class="cat-body">
-        <div>
-          <div class="cat-name">T-Shirts</div>
-          <div class="cat-count">Everyday Comfort</div>
-        </div>
-        <div class="cat-arrow"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
-      </div>
-    </div>
-
-    <div class="cat-card reveal" onclick="filterByCategory('Shirt')">
-      <div class="cat-bg cat-bg-shirts"></div>
-      <div class="cat-overlay"></div>
-      <div class="cat-body">
-        <div>
-          <div class="cat-name">Shirts</div>
-          <div class="cat-count">Sharp &amp; Stylish</div>
-        </div>
-        <div class="cat-arrow"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
-      </div>
-    </div>
-
-    <div class="cat-card reveal" onclick="filterByCategory('Hoodie')">
-      <div class="cat-bg cat-bg-hoodies"></div>
-      <div class="cat-overlay"></div>
-      <div class="cat-body">
-        <div>
-          <div class="cat-name">Hoodies</div>
-          <div class="cat-count">Warm &amp; Premium</div>
-        </div>
-        <div class="cat-arrow"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
-      </div>
-    </div>
-
   </div>
 </section>
 
@@ -200,12 +155,9 @@
 
   <!-- Filter + Sort Row -->
   <div class="products-filter-wrap">
-    <div class="cat-filter-row">
+    <!-- Filter tabs — populated from Firestore categories -->
+    <div class="cat-filter-row" id="catFilterRow">
       <button class="cat-filter-btn active" data-cat="">All</button>
-      <button class="cat-filter-btn" data-cat="T-Shirt">T-Shirts</button>
-      <button class="cat-filter-btn" data-cat="Shirt">Shirts</button>
-      <button class="cat-filter-btn" data-cat="Hoodie">Hoodies</button>
-      <button class="cat-filter-btn" data-cat="Jeans">Jeans</button>
     </div>
     <select class="sort-select" id="sortSelect">
       <option value="">Sort: Default</option>

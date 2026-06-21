@@ -310,17 +310,7 @@ onSnapshot(q, snap => {
     empty.style.display   = 'block';
 });
 
-/* ============================================================
-   FILTER BAR
-   ============================================================ */
-document.querySelectorAll('.cat-filter-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        document.querySelectorAll('.cat-filter-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        activeCat = btn.dataset.cat;
-        renderProducts();
-    });
-});
+/* Filter bar tabs are wired dynamically in renderFilterTabs() above */
 
 const sortSelect = document.getElementById('sortSelect');
 if (sortSelect) {
@@ -329,6 +319,75 @@ if (sortSelect) {
         renderProducts();
     });
 }
+
+/* ============================================================
+   CATEGORIES — load from Firestore, render cards + filter tabs
+   ============================================================ */
+const DEFAULT_CATEGORIES = [
+    { name:'T-Shirt', displayName:'T-Shirts', description:'Everyday Comfort',  color:'#c8d8ec' },
+    { name:'Shirt',   displayName:'Shirts',   description:'Sharp & Stylish',   color:'#e0e0e0' },
+    { name:'Hoodie',  displayName:'Hoodies',  description:'Warm & Premium',    color:'#c8d4d0' },
+    { name:'Jeans',   displayName:'Jeans',    description:'Premium Denim',     color:'#aac4dc' },
+];
+
+function hexDarken(hex, amt) {
+    const n = parseInt(hex.replace('#',''),16);
+    const r = Math.max(0,((n>>16)&0xff)-amt);
+    const g = Math.max(0,((n>>8)&0xff)-amt);
+    const b = Math.max(0,(n&0xff)-amt);
+    return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
+}
+
+function renderCategoryCards(cats) {
+    const grid = document.getElementById('categoriesGrid');
+    if (!grid) return;
+    grid.innerHTML = cats.map(c => {
+        const bg  = c.color ? `linear-gradient(145deg,${c.color},${hexDarken(c.color,30)})` : 'linear-gradient(145deg,#c8d8ec,#7aa3c4)';
+        return `
+        <div class="cat-card reveal" onclick="filterByCategory('${c.name}')">
+            <div class="cat-bg" style="background:${bg};position:absolute;inset:0;"></div>
+            <div class="cat-overlay"></div>
+            <div class="cat-body">
+                <div>
+                    <div class="cat-name">${c.displayName||c.name}</div>
+                    <div class="cat-count">${c.description||''}</div>
+                </div>
+                <div class="cat-arrow">
+                    <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+    activateReveal(grid.querySelectorAll('.reveal'));
+}
+
+function renderFilterTabs(cats) {
+    const row = document.getElementById('catFilterRow');
+    if (!row) return;
+    row.innerHTML = `<button class="cat-filter-btn ${activeCat===''?'active':''}" data-cat="">All</button>` +
+        cats.map(c => `<button class="cat-filter-btn ${activeCat===c.name?'active':''}" data-cat="${c.name}">${c.displayName||c.name}</button>`).join('');
+    row.querySelectorAll('.cat-filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            row.querySelectorAll('.cat-filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            activeCat = btn.dataset.cat;
+            renderProducts();
+        });
+    });
+}
+
+onSnapshot(
+    query(collection(db, 'categories'), orderBy('order', 'asc')),
+    snap => {
+        const cats = (snap.empty ? DEFAULT_CATEGORIES : snap.docs.map(d => d.data())).filter(c => c.active !== false);
+        renderCategoryCards(cats);
+        renderFilterTabs(cats);
+    },
+    () => {
+        renderCategoryCards(DEFAULT_CATEGORIES);
+        renderFilterTabs(DEFAULT_CATEGORIES);
+    }
+);
 
 /* ============================================================
    PRODUCT DETAIL MODAL — CAROUSEL

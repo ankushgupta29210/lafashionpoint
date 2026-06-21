@@ -95,10 +95,11 @@ window.togglePass = () => {
 /* ============================================================
    NAVIGATION
    ============================================================ */
-const SECTIONS = ['dashboard','products','form','inquiries','inventory','pos','orders','orderForm','coupons','couponForm','settings','customers','returns','returnForm','reviews'];
+const SECTIONS = ['dashboard','products','form','inquiries','categories','categoryForm','inventory','pos','orders','orderForm','coupons','couponForm','settings','customers','returns','returnForm','reviews'];
 const TITLES   = {
     dashboard:'Dashboard', products:'Products', form:'',
-    inquiries:'Inquiries', inventory:'Inventory', pos:'Point of Sale',
+    inquiries:'Inquiries', categories:'Categories', categoryForm:'',
+    inventory:'Inventory', pos:'Point of Sale',
     orders:'Orders', orderForm:'', coupons:'Coupons', couponForm:'', settings:'Settings',
     customers:'Customers', returns:'Returns', returnForm:'', reviews:'Reviews'
 };
@@ -123,6 +124,7 @@ function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
    REAL-TIME LISTENERS
    ============================================================ */
 function startListeners() {
+    listenCategories();
     listenProducts();
     listenInquiries();
     listenOrders();
@@ -1473,6 +1475,220 @@ function watchOnlineStatus() {
     window.addEventListener('online',  () => { update(); syncOfflineSales(); });
     window.addEventListener('offline', update);
     update();
+}
+
+/* ============================================================
+   CATEGORIES — dynamic category management
+   ============================================================ */
+let allCategories    = [];
+let selectedCatColor = '#c8d8ec';
+
+const DEFAULT_CATEGORIES = [
+    { name:'T-Shirt', displayName:'T-Shirts', description:'Everyday Comfort',  color:'#c8d8ec', order:1, active:true },
+    { name:'Shirt',   displayName:'Shirts',   description:'Sharp & Stylish',   color:'#e0e0e0', order:2, active:true },
+    { name:'Hoodie',  displayName:'Hoodies',  description:'Warm & Premium',    color:'#c8d4d0', order:3, active:true },
+    { name:'Jeans',   displayName:'Jeans',    description:'Premium Denim',     color:'#c8d8ec', order:4, active:true },
+];
+
+function listenCategories() {
+    const q = query(collection(db, 'categories'), orderBy('order', 'asc'));
+    onSnapshot(q, snap => {
+        allCategories = snap.empty
+            ? DEFAULT_CATEGORIES
+            : snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderCategoriesTable(allCategories);
+        populateCategorySelects();
+    }, () => {
+        allCategories = DEFAULT_CATEGORIES;
+        populateCategorySelects();
+    });
+}
+
+/* Populate every place that lists categories */
+function populateCategorySelects() {
+    const active = allCategories.filter(c => c.active !== false);
+
+    /* Product form select */
+    const pCat = document.getElementById('pCategory');
+    if (pCat) {
+        const cur = pCat.value;
+        pCat.innerHTML = '<option value="">Select…</option>' +
+            active.map(c => `<option value="${c.name}"${c.name===cur?' selected':''}>${c.displayName||c.name}</option>`).join('');
+    }
+
+    /* Order form product select (re-populates in openOrderForm) */
+
+    /* POS category tabs */
+    const tabs = document.getElementById('posCatTabs');
+    if (tabs) {
+        const cur = tabs.querySelector('.pos-cat.active')?.dataset?.cat || '';
+        tabs.innerHTML = `<button class="pos-cat${cur===''?' active':''}" onclick="setPosCategory(this,'')">All</button>` +
+            active.map(c => `<button class="pos-cat${cur===c.name?' active':''}" data-cat="${c.name}" onclick="setPosCategory(this,'${c.name}')">${c.displayName||c.name}</button>`).join('');
+    }
+}
+
+function renderCategoriesTable(cats) {
+    const container = document.getElementById('categoriesList');
+    if (!container) return;
+
+    if (!cats.length) {
+        container.innerHTML = `
+        <div class="empty-state">
+            <i class="fas fa-tags"></i>
+            <p>No categories yet. Add your first category!</p>
+            <button class="btn-add" onclick="openCategoryForm()"><i class="fas fa-plus"></i> Add Category</button>
+        </div>`;
+        return;
+    }
+
+    const rows = cats.map(c => `
+    <tr>
+        <td>
+            <div class="cat-color-swatch" style="background:${catGradient(c.color||'#c8d8ec')};width:36px;height:36px;border-radius:6px;border:1px solid rgba(0,0,0,.08);"></div>
+        </td>
+        <td><div class="prod-name">${c.name}</div></td>
+        <td>${c.displayName||c.name}</td>
+        <td style="color:#6b7280;font-size:.82rem;">${c.description||'—'}</td>
+        <td style="font-size:.78rem;color:#6b7280;">${c.icon||'—'}</td>
+        <td>${c.order||99}</td>
+        <td><span class="status-dot ${c.active!==false?'on':'off'}">${c.active!==false?'Active':'Hidden'}</span></td>
+        <td>
+            <div class="row-actions">
+                ${c.id ? `<button class="btn-edit" onclick="editCategory('${c.id}')"><i class="fas fa-pen"></i> Edit</button>
+                <button class="btn-del" onclick="confirmDeleteCat('${c.id}','${c.name}')"><i class="fas fa-trash"></i></button>` : '<span style="color:#9ca3af;font-size:.75rem;">Default</span>'}
+            </div>
+        </td>
+    </tr>`).join('');
+
+    container.innerHTML = `
+    <table class="products-table">
+        <thead>
+            <tr><th>Color</th><th>Name</th><th>Label</th><th>Description</th><th>Icon</th><th>Order</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function catGradient(hex) {
+    const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+    const d = (v) => Math.max(0,v-30).toString(16).padStart(2,'0');
+    return `linear-gradient(135deg,${hex},#${d(r)}${d(g)}${d(b)})`;
+}
+
+window.filterCategoriesTable = () => {
+    const s = (document.getElementById('searchCategories')?.value||'').toLowerCase();
+    renderCategoriesTable(s ? allCategories.filter(c =>
+        c.name.toLowerCase().includes(s) || (c.displayName||'').toLowerCase().includes(s)
+    ) : allCategories);
+};
+
+window.openCategoryForm = () => {
+    resetCategoryForm();
+    document.getElementById('categoryFormTitle').textContent = 'Add Category';
+    document.getElementById('pageTitle').textContent         = 'Add Category';
+    showSection('categoryForm');
+};
+
+window.editCategory = id => {
+    const c = allCategories.find(x => x.id === id);
+    if (!c) return;
+    resetCategoryForm();
+    document.getElementById('categoryFormTitle').textContent = 'Edit Category';
+    document.getElementById('pageTitle').textContent         = 'Edit Category';
+
+    document.getElementById('editCategoryId').value = id;
+    document.getElementById('catName').value        = c.name        || '';
+    document.getElementById('catLabel').value       = c.displayName || '';
+    document.getElementById('catDesc').value        = c.description || '';
+    document.getElementById('catIcon').value        = c.icon        || '';
+    document.getElementById('catColor').value       = c.color       || '';
+    document.getElementById('catOrder').value       = c.order       || 99;
+    document.getElementById('catActive').checked   = c.active !== false;
+    selectedCatColor = c.color || '#c8d8ec';
+
+    showSection('categoryForm');
+};
+
+function resetCategoryForm() {
+    document.getElementById('categoryForm').reset();
+    document.getElementById('editCategoryId').value = '';
+    document.getElementById('catActive').checked    = true;
+    document.getElementById('catOrder').value       = 99;
+    selectedCatColor = '#c8d8ec';
+    document.querySelectorAll('.color-preset').forEach(b => b.classList.remove('active'));
+}
+
+window.selectCatColor = (color, el) => {
+    selectedCatColor = color;
+    document.getElementById('catColor').value = color;
+    document.querySelectorAll('.color-preset').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+};
+
+window.saveCategory = async e => {
+    e.preventDefault();
+    const btn = document.getElementById('saveCategoryBtn');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…';
+    btn.disabled  = true;
+
+    const id    = document.getElementById('editCategoryId').value;
+    const color = document.getElementById('catColor').value.trim() || selectedCatColor || '#c8d8ec';
+    const name  = document.getElementById('catName').value.trim();
+    const data  = {
+        name,
+        displayName: document.getElementById('catLabel').value.trim() || name,
+        description: document.getElementById('catDesc').value.trim(),
+        icon:        document.getElementById('catIcon').value.trim(),
+        color,
+        order:       Number(document.getElementById('catOrder').value) || 99,
+        active:      document.getElementById('catActive').checked,
+        updatedAt:   serverTimestamp(),
+    };
+
+    try {
+        if (id) {
+            await updateDoc(doc(db, 'categories', id), data);
+            toast('Category updated!', 'success');
+        } else {
+            data.createdAt = serverTimestamp();
+            await addDoc(collection(db, 'categories'), data);
+            toast(`Category "${name}" added!`, 'success');
+        }
+        showSection('categories');
+    } catch (err) {
+        console.error(err);
+        toast('Error saving category', 'error');
+    } finally {
+        btn.innerHTML = '<i class="fas fa-save"></i> Save Category';
+        btn.disabled  = false;
+    }
+};
+
+let pendingDeleteCatId = null;
+window.confirmDeleteCat = (id, name) => {
+    pendingDeleteCatId = id;
+    const modal = document.getElementById('deleteModal');
+    modal.querySelector('h3').textContent = 'Delete Category?';
+    modal.querySelector('p').textContent  = `"${name}" will be removed from filters. Existing products keep their category value.`;
+    document.getElementById('confirmDeleteBtn').onclick = doDeleteCategory;
+    modal.style.display = 'flex';
+};
+
+async function doDeleteCategory() {
+    if (!pendingDeleteCatId) return;
+    const btn = document.getElementById('confirmDeleteBtn');
+    btn.textContent = 'Deleting…';
+    btn.disabled    = true;
+    try {
+        await deleteDoc(doc(db, 'categories', pendingDeleteCatId));
+        toast('Category deleted', 'success');
+    } catch (err) {
+        toast('Error deleting category', 'error');
+    } finally {
+        closeDeleteModal();
+        btn.textContent = 'Delete';
+        btn.disabled    = false;
+    }
 }
 
 /* ============================================================

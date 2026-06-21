@@ -1075,6 +1075,28 @@ input:checked + .slider::before { transform: translateX(20px); }
 .pos-chip small     { display: block; font-size: .65rem; line-height: 1; color: #388e3c; }
 
 /* ============================================================
+   CATEGORY MANAGEMENT
+   ============================================================ */
+.cat-color-presets {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+}
+.color-preset {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    border: 2.5px solid transparent;
+    cursor: pointer;
+    transition: var(--trans);
+    flex-shrink: 0;
+}
+.color-preset:hover  { transform: scale(1.12); }
+.color-preset.active { border-color: var(--text); box-shadow: 0 0 0 2px rgba(0,0,0,.15); }
+
+.cat-color-swatch { flex-shrink: 0; }
+
+/* ============================================================
    OFFLINE BADGE
    ============================================================ */
 .offline-badge {
