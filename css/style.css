@@ -238,7 +238,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 .hero {
   position: relative;
   height: 100vh; min-height: 700px;
-  display: flex; align-items: flex-end;
+  display: flex; align-items: flex-start;
   overflow: hidden;
   background: var(--page-cool);
 }
@@ -280,7 +280,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 }
 .hero-content {
   position: relative; z-index: 3;
-  padding: 0 80px 100px;
+  padding: 140px 80px 60px;
   max-width: 900px;
 }
 .hero-eyebrow {
@@ -1442,7 +1442,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
   .nav.scrolled { padding: 14px 28px; }
   .nav-links { display: none; }
   .hamburger { display: flex; }
-  .hero-content { padding: 0 40px 80px; }
+  .hero-content { padding: 120px 40px 60px; }
   .hero-scroll { right: 40px; }
   .promo { height: auto; padding: 80px 40px; }
   .promo-number { display: none; }
@@ -1463,7 +1463,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
   .pd-details-col { max-height: none; overflow-y: visible; }
 }
 @media (max-width: 600px) {
-  .hero-content { padding: 0 24px 60px; }
+  .hero-content { padding: 100px 24px 40px; }
   .nav { padding: 18px 24px; }
   .nav.scrolled { padding: 12px 24px; }
   .categories-grid { grid-template-columns: 1fr; }
