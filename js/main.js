@@ -376,17 +376,19 @@ function renderFilterTabs(cats) {
     });
 }
 
+/* Show defaults immediately — no waiting for Firebase */
+renderCategoryCards(DEFAULT_CATEGORIES);
+renderFilterTabs(DEFAULT_CATEGORIES);
+
+/* Then swap in Firestore categories if/when they load */
 onSnapshot(
     query(collection(db, 'categories'), orderBy('order', 'asc')),
     snap => {
-        const cats = (snap.empty ? DEFAULT_CATEGORIES : snap.docs.map(d => d.data())).filter(c => c.active !== false);
-        renderCategoryCards(cats);
-        renderFilterTabs(cats);
+        if (snap.empty) return; // keep defaults
+        const cats = snap.docs.map(d => d.data()).filter(c => c.active !== false);
+        if (cats.length) { renderCategoryCards(cats); renderFilterTabs(cats); }
     },
-    () => {
-        renderCategoryCards(DEFAULT_CATEGORIES);
-        renderFilterTabs(DEFAULT_CATEGORIES);
-    }
+    () => { /* permission denied — defaults already shown, nothing to do */ }
 );
 
 /* ============================================================
